@@ -28,7 +28,7 @@ import sys
 
 TYPE_NAMES = {
     1: "bitmap", 2: "texture", 4: "FRME", 7: "MODL", 8: "MPRT",
-    9: "OB3D", 10: "OPRT", 11: "sound?", 12: "wave",
+    9: "OB3D", 10: "OPRT", 11: "array", 12: "wave",
 }
 
 
@@ -62,6 +62,18 @@ def read_internal(d, keys, ent):
     return d[base + o:base + o + s]
 
 
+def read_array(bin_path, ent):
+    """Decode a 7L type-11 array (script data table; RTLIB loader FUN_1001218d).
+    Header 0x3c bytes: u32 (runtime ptr), u32 byte_size, u32 ?, u32 resource_id, u32 ndims,
+    u32 strides[5], u32 dims[5]; then int32 data. Returns (dims, flat list of ints)."""
+    raw = read_entry(bin_path, ent)
+    hdr = struct.unpack_from("<15I", raw, 0)
+    nd = hdr[4]
+    dims = list(hdr[10:10 + nd])
+    n = hdr[1] // 4
+    return dims, list(struct.unpack_from("<%di" % n, raw, 0x3c))
+
+
 def main():
     d, ents, keys = load(sys.argv[1])
     print("entries", len(ents))
@@ -76,3 +88,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

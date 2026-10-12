@@ -232,6 +232,47 @@ One occurrence was without user input near the end of the intro. Unresolved.
 5. Possible timing issues on fast CPUs (`timeSetEvent`-driven; "Out of timers" error string).
 6. CD audio music → needs CD-audio emulation if tracks are available.
 
+## Script VM (RTLIB32), disassembler `tools/script7l.py`
+Scripts are 7L **type 19** resources (2342 of them). Each one is a function, called by
+resource id. `RtRun` → `FUN_1001f12d` (copies args onto the frame stack at instance+0x35cf)
+→ `FUN_1001fcfe` (max nesting 30) → `FUN_1001fdc6`, which loops over **`FUN_1001f1f7`**.
+That is the statement dispatcher: u16 opcode, and each handler returns the byte distance to
+the next statement, so jumps are relative to the statement start and statements are padded
+to even lengths.
+- Most statements are fixed-length records (lengths in `script7l.FIXED`). Key variable ones:
+  `0xAF len expr` (expression statement), `0xA1 len expr` (return value), `0xA2` (end),
+  `0x5B/0xE3 f t expr` (if: f = rel target when false, t = length), `0x68 rel` (goto),
+  `0x5A rel a b cmp fa fb` (compare typed operands), `0x59` (compare, then run script A or B),
+  `0xDA/0xDB` (switch on an operand / expression, with case table entries `0xDC value
+  target flag` embedded in the code), `0x01` (variable length, byte 9 * 4 + 10).
+- Typed operands `(u32 value, u8 is_var)`: `FUN_10014e00`.
+- **Expression VM `FUN_10003330`**: byte opcodes on an int32 stack (`DAT_10053eb0`, sp at
+  instance+0x3d33). 01 push imm, 02 load var, 04 address of var, 03 index, 05 deref,
+  06 element address, 08 assign, 0D call (u32, u32 nargs; the callee id sits below the args),
+  0E call script (u32 nlocals, u32 nargs), 0F..2A neg/not/~/+ - * / %/comparisons/&& ||/
+  & | ^/inc/dec/short-circuit jumps/shifts, 00 end. Integers only: scripts use fixed-point
+  or scaled values (positions are in game units; 600 = one ground tile).
+- Variables: id < 0x13FE → global (instance+0x3e2f+4*id); otherwise frame local L(id-0x13FE).
+- Call ids < 0xFA → RTLIB builtins (`FUN_10003fad`, a 181-case switch; names in
+  `script7l.BUILTINS`). Ids ≥ 0xFA → plugin natives through `ExternalCall`. Index id-0xFA
+  follows the key-11 name order (verified by arity: AddObject 5 args, SetPosition 4, …).
+- Validation: all 2342 scripts decode exactly to their end, and all 6979 jump and case
+  targets land on statement boundaries.
+- Usage: GetProperty/SetProperty (≈3300 calls) dominate. Then ArrayGet (1879),
+  SpriteSendMessage, ArraySet, Clone (= instantiate a template resource), List*,
+  SetUpdateScript, LinkModel, DSPlayWave, the DirectPlay natives, …
+
+### Data tables (type 11 = arrays, `res7l.read_array`)
+709 int32 arrays with 1–3 dimensions (header 0x3c bytes: byte size, id, ndims, strides[5],
+dims[5]). Read with `ArrayGet(array, i, j, …)`. Example: **array 2512 = per-mission world
+setup**, 16 rows (4 worlds × 4 missions):
+`[backdrop bitmap (type 1, 1328x383 panorama), palette (type 17), fog depth, fog R, G, B,
+world 0-3, wave resource]`. It's used by script 2514: SetCameraBackdrop, SetFogDepthColor,
+SetBackgroundColor. So **the palette is chosen per mission**. Worlds: 0 = desert (fog 2000),
+1 = (pale blue fog), 2 = (fog 3000, dark), 3 = red dusk (fog depth 5).
+Ground: per-world scripts (e.g. 2418 = desert, called from 2514) place tile objects (OPRT 2478/2480, ...) every 600 units with
+`script_2039(1, tile, x, z, 0, 0, 260)` and `SetLevel(obj, -100)`.
+
 ## Remake-relevant (Goal 2)
 - All gameplay logic is in script bytecode (key 5) + RENDER.R32 natives (AI tasks/goals,
   movement behaviours: pursue/evade/flock/follow, collision, projectiles, damage/health).
@@ -256,5 +297,5 @@ One occurrence was without user input near the end of the intro. Unresolved.
 - OB3D/OPRT are serialised script objects: a list of tagged values. 0x1e = class (type 19
   bytecode), 0x13 = method (type 19), 0x2 = float, 0x7 = resource reference (e.g. a wave),
   0x6 = ?. Decode them together with the script VM.
-- Next: the RTLIB32 bytecode interpreter → script disassembler (missions, objectives,
-  object placement, backdrop/ground choices per mission).
+- Script disassembler: done (see "Script VM"). Next: mission flow, objectives,
+  object placement and OB3D/OPRT property records (via RENDER GetProperty/SetProperty).
