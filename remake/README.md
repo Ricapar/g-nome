@@ -9,8 +9,10 @@ Status: Phase 0 in progress. Nothing playable yet.
 ## Getting started
 1. Create the venv: `python -m venv .venv` and
    `.venv\Scripts\pip install -r tools/requirements.txt` (repo root).
-2. Export the original assets from your disc (the output is gitignored and must not be committed):
+2. Export the original assets and data from your disc (gitignored; never commit them):
    `.venv\Scripts\python -I tools/export_models.py <disc>\G-NOME\G-NOME.BIN remake/game/_import`
+   and `.venv\Scripts\python -I tools/export_gamedata.py <disc>\G-NOME\G-NOME.BIN remake/game/_import`.
+   Script listing: `.venv\Scripts\python -I tools/script7l.py <disc>\G-NOME\G-NOME.BIN > scripts.txt`.
 3. Open `remake/game` in Godot 4.7 and run it. The model viewer lists every MODL/MPRT.
    Arrow keys select, drag orbits, the wheel zooms, C toggles culling, X mirrors Z.
    Batch screenshots: `godot --path remake/game -- --shots <outdir> modl_02700,modl_02698`.
@@ -46,7 +48,9 @@ Status: Phase 0 in progress. Nothing playable yet.
 1. Exporters for the 7L archive:
    - [x] models (MODL/MPRT) → glTF with part hierarchy, tags and materials (801 models)
    - [x] textures → PNG (923); RLE and LZW bitmap codecs; palettes located
-   - [ ] FRME animations → glTF animations; OB3D/OPRT object definitions
+   - [x] OB3D/OPRT object templates, type-11 arrays, strings, missions/objectives, world
+         table → JSON (`tools/export_gamedata.py`)
+   - [ ] FRME animations → glTF animations
    - [ ] sprites/UI → PNG with the correct palette; waves → WAV; SMK → modern video
 2. [x] Model viewer (`remake/game/viewer`).
 3. [x] Terrain: mission 1-1 is a flat tiled plane plus a backdrop panorama plus placed
@@ -54,8 +58,8 @@ Status: Phase 0 in progress. Nothing playable yet.
    Implication: the remake's terrain has to be authored new (a modern heightmap or
    landscape). The original only fixes the playable area, object layout and the flat
    collision plane.
-4. **Script VM:** reverse the RTLIB32 bytecode interpreter, then write a disassembler for
-   key 5. Missions, triggers, objectives, briefings and menus all live there.
+4. [x] **Script VM:** disassembler for all 2342 scripts (`tools/script7l.py`).
+   [ ] Name property indices and arrays; map each mission's entry script.
 5. RENDER.R32 natives: movement and physics, AI behaviours, weapons and projectiles,
    damage, the eject/commandeer mechanic, camera and radar.
 6. A telemetry hook in `ddraw.dll` (or a separate injected DLL) that logs entity state each

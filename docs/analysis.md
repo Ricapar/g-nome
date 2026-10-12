@@ -294,8 +294,22 @@ Ground: per-world scripts (e.g. 2418 = desert, called from 2514) place tile obje
   spans ±n*cell with a step of 2*cell, and the height is bilinear inside a quad
   (`FUN_1001a012`, used by `UpdateGroundHeight`). The script imports it, but no resource with
   that layout was found statically. Check other missions once the script disassembler exists.
-- OB3D/OPRT are serialised script objects: a list of tagged values. 0x1e = class (type 19
-  bytecode), 0x13 = method (type 19), 0x2 = float, 0x7 = resource reference (e.g. a wave),
-  0x6 = ?. Decode them together with the script VM.
-- Script disassembler: done (see "Script VM"). Next: mission flow, objectives,
-  object placement and OB3D/OPRT property records (via RENDER GetProperty/SetProperty).
+- **No heightfield anywhere**: `FUN_100043f0` (RENDER's resource load proc) accepts a `GRND`
+  magic for `AddGround`, but no resource on the disc has it. Every mission is a flat plane.
+- **Object templates (OB3D type 9, OPRT type 10)**, loader `FUN_100043f0`, decoder
+  `res7l.read_object`. Layout: `u32 slots`, then records: `[1,a,b]`, `[2,min,max,restype,res]`
+  (restype 7 = model LOD for distance min..max, otherwise a script active in that range),
+  `[6,interval,script]` update script, `[8,model]`, and finally `[7,size,n,props[n]]`, the
+  property array that GetProperty/SetProperty index (runtime object +0xe4 = record count,
+  properties at +0xec+16*count). `size` is usually 144. Templates seed only a few properties.
+  Scripts set the rest (unit stats come from arrays via SetProperty). All 483 decode.
+- **String constants (key 4)**, 541 strings: FMV names, AI team names (Union/Darken/Merc/Scorp),
+  characters (Thane, Kylie, Sheridan, Wilkins), weapon names, the **full control-action list**
+  and key names, keyboard presets ("G-NOME Flight Sim/Arcade", "MechWarrior2", "EarthSiege2",
+  "Shattered Steel"), **all 22 campaign mission titles and objective lines**, 7 multiplayer
+  maps with descriptions, and the menu tooltips. `tools/export_gamedata.py` groups them into
+  `missions.json` (22 missions ↔ 22 objective groups).
+- **Key 3** = initial values of script globals: `(var, value)` pairs.
+- Script disassembler: done (see "Script VM"). Next: name the object property indices
+  (GetProperty/SetProperty, ≈3300 uses) and the type-11 arrays (unit stats, weapons), find
+  each mission's entry script and its object placement, and decode FRME animations.

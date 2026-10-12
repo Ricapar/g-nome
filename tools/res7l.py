@@ -73,6 +73,40 @@ def read_array(bin_path, ent):
     n = hdr[1] // 4
     return dims, list(struct.unpack_from("<%di" % n, raw, 0x3c))
 
+def read_object(bin_path, ent):
+    """Decode an OB3D/OPRT object template (RENDER.R32 loader FUN_100043f0).
+    u32 magic, u32 slots, then records until type 7:
+      [1, a, b]                     type 1 (a, b)
+      [2, min, max, restype, res]   restype 7 (MODL): model LOD for distance min..max,
+                                    otherwise a script/resource active in that range
+      [6, interval, script]         update script
+      [8, res]                      model, always
+      [7, x, n, props[n]]           property array (GetProperty/SetProperty index), ends
+    Returns (records, x, props). Floats are left as raw u32 (use as_float)."""
+    raw = read_entry(bin_path, ent)
+    w = struct.unpack_from("<%dI" % (len(raw) // 4), raw)
+    i, recs = 2, []
+    x, props = None, []
+    while i < len(w):
+        t = w[i]
+        if t == 1 or t == 6:
+            recs.append((t, w[i + 1], w[i + 2])); i += 3
+        elif t == 2:
+            recs.append((2,) + tuple(w[i + 1:i + 5])); i += 5
+        elif t == 8:
+            recs.append((8, w[i + 1])); i += 2
+        elif t == 7:
+            x, n = w[i + 1], w[i + 2]
+            props = list(w[i + 3:i + 3 + n])
+            break
+        else:
+            raise ValueError("unknown object record %d" % t)
+    return recs, x, props
+
+
+def as_float(u):
+    return struct.unpack("<f", struct.pack("<I", u))[0]
+
 
 def main():
     d, ents, keys = load(sys.argv[1])
