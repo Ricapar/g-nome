@@ -47,6 +47,7 @@ func _ready() -> void:
 	rim.rotation_degrees = Vector3(-15, 160, 0)
 	rim.light_energy = 0.9
 	rim.light_color = Color(0.7, 0.85, 1.0)
+	rim.light_specular = 0.08 # it faces the camera; full specular glares off the floor
 	_viewport.add_child(rim)
 	_viewport.add_child(_pivot)
 	_cam.fov = 32.0

@@ -11,7 +11,10 @@ const FRAME := preload("res://ui/frame/menu_frame.glb")
 const SHADER := preload("res://ui/frame/frame_material.gdshader")
 const CC0 := "res://art_cc0/%s/%s_2K-JPG_%s.jpg"
 const HDRI := "res://art_cc0/hdri/studio_small_09_1k.hdr"
-const FRAME_HEIGHT := 10.8 # model units; 1 unit = 100 design px
+const EMBLEM := preload("res://ui/frame/emblem.svg")
+const SAIRA := preload("res://ui/fonts/Saira-VF.ttf")
+const STENCILS := {"text_L": "UIA-07", "text_R": "BAY 3"}
+const FRAME_HEIGHT := 11.3 # model units (1 = 100 design px); a margin so the pillars nearer the camera fit
 const FOV := 24.0
 
 var camera := Camera3D.new()
@@ -38,6 +41,10 @@ func _ready() -> void:
 			_anchors[String(n.name).trim_prefix("anchor_")] = n
 		elif n.name.begins_with("light_"):
 			_add_lamp_light(n)
+		elif n.name.begins_with("decal_"):
+			_add_decal(n)
+		elif STENCILS.has(String(n.name)):
+			_add_stencil(n, STENCILS[String(n.name)])
 	camera.fov = FOV
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
 	camera.position = Vector3(0, 0, 1.2 + (FRAME_HEIGHT * 0.5) / tan(deg_to_rad(FOV * 0.5)))
@@ -141,6 +148,40 @@ func _build_environment() -> void:
 	add_child(screen)
 
 
+## Painted insignia projected onto the armour (the empty's scale x/y = width/height).
+func _add_decal(n: Node3D) -> void:
+	var d := Decal.new()
+	d.texture_albedo = EMBLEM
+	d.modulate = Color(0.86, 0.85, 0.82)
+	d.albedo_mix = 0.92
+	d.size = Vector3(n.scale.x, 0.8, n.scale.y)
+	d.upper_fade = 0.1
+	d.lower_fade = 0.1
+	add_child(d)
+	# decals project along their local -Y; turn that toward -Z (into the plate)
+	d.global_transform = Transform3D(Basis(Vector3.RIGHT, deg_to_rad(90.0)), n.global_position)
+
+
+## Stencilled lettering on the lower armour, lit like paint.
+func _add_stencil(n: Node3D, text: String) -> void:
+	var font := FontVariation.new()
+	font.base_font = SAIRA
+	font.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wdth"): 110,
+		TextServerManager.get_primary_interface().name_to_tag("wght"): 800}
+	var l := Label3D.new()
+	l.text = text
+	l.font = font
+	l.font_size = 72
+	l.pixel_size = 0.0034
+	l.outline_size = 0
+	l.modulate = Color(0.85, 0.84, 0.8, 0.7)
+	l.shaded = true
+	l.double_sided = false
+	add_child(l)
+	l.global_position = n.global_position + Vector3(0, 0, 0.06)
+	l.rotation_degrees.y = 4.5 if n.global_position.x < 0 else -4.5
+
+
 func _add_lamp_light(n: Node3D) -> void:
 	var l := OmniLight3D.new()
 	l.position = n.global_position
@@ -188,6 +229,9 @@ func _material(name: String) -> Material:
 			m = _layered("Metal027", 0.5, Color(0.4, 0.4, 0.42), "Metal038", Color(0.7, 0.7, 0.7))
 		"hazard":
 			m = _layered("PaintedMetal016", 0.9, Color(1, 1, 1), "Metal038", Color(0.9, 0.9, 0.9))
+		"rubber_red":
+			m = _layered("Rubber004", 0.9, Color(0.42, 0.06, 0.05), "Rubber004", Color(0.4, 0.05, 0.04))
+			m.set_shader_parameter("wear_amount", 0.0)
 		"rubber":
 			m = _layered("Rubber004", 0.9, Color(0.4, 0.4, 0.42), "Rubber004", Color(0.4, 0.4, 0.42))
 			m.set_shader_parameter("wear_amount", 0.0)

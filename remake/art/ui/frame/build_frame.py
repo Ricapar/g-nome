@@ -27,7 +27,7 @@ COLOURS = {
     "red_paint": (0.45, 0.05, 0.04), "white_paint": (0.8, 0.8, 0.78), "steel_dark": (0.12, 0.12, 0.12),
     "steel_brushed": (0.55, 0.55, 0.55), "black_coat": (0.02, 0.02, 0.02), "hazard": (0.6, 0.45, 0.05),
     "rubber": (0.03, 0.03, 0.03), "glass_dark": (0.0, 0.02, 0.02), "lamp_orange": (1.0, 0.45, 0.05),
-    "lamp_red": (1.0, 0.1, 0.05), "lamp_yellow": (1.0, 0.8, 0.1),
+    "lamp_red": (1.0, 0.1, 0.05), "lamp_yellow": (1.0, 0.8, 0.1), "rubber_red": (0.3, 0.03, 0.02),
 }
 for _i in range(5):
     COLOURS["led_%d" % _i] = (0.02, 0.05, 0.03)
@@ -95,13 +95,25 @@ def _extrude_back(bm, d):
     bmesh.ops.translate(bm, verts=verts, vec=(0, d, 0))
 
 
-def prism(name, pts, d, mat, y, pivot=(0.0, 0.0), rot=(0, 0, 0), bevel=0.04, segments=3, angle=35):
-    """Outline pts (world x, z) extruded from y back to y + d; rotation rot (deg) about pivot."""
+def prism(name, pts, d, mat, y, pivot=(0.0, 0.0), rot=(0, 0, 0), bevel=0.04, segments=3, angle=35, curve=None):
+    """Outline pts (world x, z) extruded from y back to y + d; rotation rot (deg) about pivot.
+    curve = (cx, k) bows the piece around a vertical axis at world x = cx: y += k * (x - cx)^2,
+    so plates wrap around a pillar (pieces mounted on a plate use the same curve)."""
     bm = bmesh.new()
     vs = [bm.verts.new((x - pivot[0], 0, z - pivot[1])) for x, z in pts]
     bm.faces.new(vs)
     bm.normal_update()
     _extrude_back(bm, d)
+    if curve:
+        xs = [v.co.x for v in bm.verts]
+        x = min(xs) + 0.12
+        while x < max(xs) - 0.05:
+            bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=(x, 0, 0), plane_no=(1, 0, 0))
+            x += 0.12
+        for v in bm.verts:
+            dx = v.co.x + pivot[0] - curve[0]
+            v.co.y += curve[1] * dx * dx
+        bm.normal_update()
     return _finish(bm, name, mat, (pivot[0], y, pivot[1]), rot, bevel, segments, angle)
 
 
@@ -213,25 +225,29 @@ def build_pillar(s):
 
     yaw = -s * 9.0
     piv = (X(PW), 0.0)
+    C = (X(PW / 2), 0.2)  # armour wraps around the pillar axis
     # core column
     prism("core_" + tag, P([(0.1, -5.6), (2.2, -5.6), (2.2, 5.6), (0.1, 5.6)]), 1.4, "steel_dark", -0.45)
     # ---- top armour: main plate with a cut corner, a layered plate, chevrons, lights, vents
     prism("armour_top_" + tag, P([(0.0, 2.38), (PW, 2.38), (PW, 4.35), (1.55, 5.6), (0.0, 5.6)]),
-          0.55, "red_paint", -1.1, piv, (0, 0, yaw), bevel=0.07)
+          0.55, "red_paint", -1.1, piv, (0, 0, yaw), curve=C, bevel=0.07)
     prism("armour_top_b_" + tag, P([(0.22, 3.25), (1.95, 3.25), (1.95, 4.15), (1.35, 4.95), (0.22, 4.95)]),
-          0.3, "red_paint", -1.32, piv, (0, 0, yaw), bevel=0.05)
-    for k in range(3):
+          0.3, "red_paint", -1.32, piv, (0, 0, yaw), curve=C, bevel=0.05)
+    for k in range(3 if s < 0 else 0):  # chevrons on the left, the emblem decal on the right
         u0 = 0.45 + 0.42 * k
         prism("chevron_%s%d" % (tag, k), P([(u0, 3.45), (u0 + 0.2, 3.45), (u0 + 0.62, 3.95), (u0 + 0.62, 4.2), (u0, 3.6)]),
-              0.03, "white_paint", -1.345, piv, (0, 0, yaw), bevel=0.008, segments=1)
+              0.03, "white_paint", -1.345, piv, (0, 0, yaw), curve=C, bevel=0.008, segments=1)
     for k in range(3):
         prism("ind_%s%d" % (tag, k), P([(0.3, 2.6 + 0.17 * k), (0.62, 2.6 + 0.17 * k), (0.62, 2.7 + 0.17 * k), (0.3, 2.7 + 0.17 * k)]),
-              0.03, "lamp_yellow" if k else "lamp_orange", -1.13, piv, (0, 0, yaw), bevel=0.0)
+              0.03, "lamp_yellow" if k else "lamp_orange", -1.13, piv, (0, 0, yaw), curve=C, bevel=0.0)
     light("ind_" + tag, X(0.5), 2.8, -1.5)
-    prism("vent_frame_" + tag, P([(1.1, 2.55), (2.05, 2.55), (2.05, 3.05), (1.1, 3.05)]), 0.06, "steel_dark", -1.15, piv, (0, 0, yaw), bevel=0.02)
+    if s > 0:
+        empty("decal_emblem_R", (X(1.08), -1.33, 4.0), (1.95, 1.0, 1.22))
+    empty("text_" + tag, (X(1.25), -1.16, -4.38))
+    prism("vent_frame_" + tag, P([(1.1, 2.55), (2.05, 2.55), (2.05, 3.05), (1.1, 3.05)]), 0.06, "steel_dark", -1.15, piv, (0, 0, yaw), curve=C, bevel=0.02)
     for k in range(4):
         prism("vent_slat_%s%d" % (tag, k), P([(1.17, 2.62 + 0.11 * k), (1.98, 2.62 + 0.11 * k), (1.98, 2.67 + 0.11 * k), (1.17, 2.67 + 0.11 * k)]),
-              0.03, "black_coat", -1.17, piv, (0, 0, yaw), bevel=0.0)
+              0.03, "black_coat", -1.17, piv, (0, 0, yaw), curve=C, bevel=0.0)
     # rams and hoses on the outer side
     for k, z0 in enumerate((4.75, 3.05)):
         cylinder("ram_sleeve_%s%d" % (tag, k), 0.17, 1.0, "black_coat", (X(0.15), -0.75, z0), axis="X")
@@ -252,22 +268,28 @@ def build_pillar(s):
         anchor("slot_%s%d" % (tag, i), cx, z, SLOT_W, SLOT_H, -1.22)
     # ---- lower armour with a foot that reaches in under the key bar
     prism("armour_low_" + tag, P([(0.0, -1.5), (PW, -1.5), (PW, -3.85), (3.15, -4.45), (3.15, -5.6), (0.0, -5.6)]),
-          0.55, "red_paint", -1.1, piv, (0, 0, yaw * 0.5), bevel=0.07)
-    prism("hazard_" + tag, P([(0.08, -1.6), (2.22, -1.6), (2.22, -1.95), (0.08, -1.95)]), 0.04, "hazard", -1.14, piv, (0, 0, yaw * 0.5), bevel=0.01)
-    prism("grille_frame_" + tag, P([(0.45, -2.25), (1.95, -2.25), (1.95, -3.45), (0.45, -3.45)]), 0.08, "steel_dark", -1.16, piv, (0, 0, yaw * 0.5), bevel=0.03)
+          0.55, "red_paint", -1.1, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.07)
+    prism("hazard_" + tag, P([(0.08, -1.6), (2.22, -1.6), (2.22, -1.95), (0.08, -1.95)]), 0.04, "hazard", -1.14, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.01)
+    prism("grille_frame_" + tag, P([(0.45, -2.25), (1.95, -2.25), (1.95, -3.45), (0.45, -3.45)]), 0.08, "steel_dark", -1.16, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.03)
     for k in range(9):
         prism("grille_slat_%s%d" % (tag, k), P([(0.55, -2.37 - 0.12 * k), (1.85, -2.37 - 0.12 * k), (1.85, -2.42 - 0.12 * k), (0.55, -2.42 - 0.12 * k)]),
-              0.03, "black_coat", -1.18, piv, (0, 0, yaw * 0.5), bevel=0.0)
+              0.03, "black_coat", -1.18, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.0)
     for k in range(2):
         u0 = 1.45 + 0.55 * k
         prism("foot_chevron_%s%d" % (tag, k), P([(u0, -5.15), (u0 + 0.28, -5.15), (u0 + 0.6, -4.85), (u0 + 0.32, -4.85)]),
-              0.03, "white_paint", -1.14, piv, (0, 0, yaw * 0.5), bevel=0.008, segments=1)
+              0.03, "white_paint", -1.14, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.008, segments=1)
     for k, z0 in enumerate((-2.45, -3.75)):
         cylinder("piston_%s%d" % (tag, k), 0.13, 1.1, "steel_brushed", (X(-0.2), -0.85, z0), axis="X")
         cylinder("piston_cap_%s%d" % (tag, k), 0.2, 0.25, "black_coat", (X(0.25), -0.85, z0), axis="X")
     # cables from the pillar into the machinery under the screen
     cable("cable_%s0" % tag, [(X(2.0), -1.0, -1.45), (X(2.6), -1.05, -2.2), (X(3.1), -0.95, -2.75)], 0.07)
     cable("cable_%s1" % tag, [(X(2.1), -0.8, -1.4), (X(2.9), -0.85, -2.0), (X(3.6), -0.8, -2.62)], 0.05)
+    # cable runs in the gap between pillar and bezel, and a bundle into the key bar
+    cable("run_%s0" % tag, [(X(2.33), -0.75, 5.4), (X(2.4), -0.8, 2.0), (X(2.36), -0.8, -1.3)], 0.06)
+    cable("run_%s1" % tag, [(X(2.45), -0.7, 5.4), (X(2.5), -0.72, 1.0), (X(2.42), -0.7, -1.4)], 0.045, "rubber_red")
+    cable("bundle_%s0" % tag, [(X(2.7), -0.95, -2.6), (X(2.95), -1.15, -3.3), (X(3.05), -1.1, -3.95), (X(3.3), -0.75, -4.2)], 0.075)
+    cable("bundle_%s1" % tag, [(X(2.85), -0.9, -2.62), (X(3.15), -1.08, -3.25), (X(3.2), -1.05, -3.9), (X(3.45), -0.7, -4.15)], 0.055, "rubber_red")
+    cable("bundle_%s2" % tag, [(X(2.6), -0.85, -2.58), (X(2.8), -1.0, -3.4), (X(2.95), -0.95, -4.0), (X(3.2), -0.7, -4.25)], 0.04)
 
 
 def build_bezel():

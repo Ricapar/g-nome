@@ -25,5 +25,9 @@ void fragment() {
 	float edge = power * 1.1;
 	float off = smoothstep(edge - 0.02, edge, uv.y);
 	float sweep = exp(-pow((uv.y - edge) / 0.008, 2.0)) * (1.0 - step(1.0, power));
-	COLOR = vec4(vec3(0.2, 1.0, 0.45) * sweep * 2.0, max(dark * 0.45, off) + sweep);
+	// faint reflection on the glass: a soft diagonal band from the top left
+	float sheen = exp(-pow((uv.x * 0.55 + uv.y - 0.32) / 0.16, 2.0)) * 0.05 * (1.0 - off);
+	float a = max(dark * 0.45, off);
+	vec3 rgb = (vec3(0.2, 1.0, 0.45) * sweep * 2.0 + vec3(0.55, 0.75, 0.75) * sheen) / max(a + sheen + sweep, 1e-3);
+	COLOR = vec4(rgb, clamp(a + sheen + sweep, 0.0, 1.0));
 }
