@@ -1,0 +1,94 @@
+[gd_resource type="Theme" load_steps=11 format=3]
+
+[ext_resource type="FontFile" path="res://ui/fonts/Saira-VF.ttf" id="1_saira"]
+[ext_resource type="FontFile" path="res://ui/fonts/ShareTechMono-Regular.ttf" id="2_mono"]
+
+[sub_resource type="FontVariation" id="body"]
+base_font = ExtResource("1_saira")
+variation_opentype = {2003072104: 87, 2003265652: 500}
+
+[sub_resource type="FontVariation" id="body_bold"]
+base_font = ExtResource("1_saira")
+variation_opentype = {2003072104: 87, 2003265652: 700}
+
+[sub_resource type="FontVariation" id="title"]
+base_font = ExtResource("1_saira")
+variation_opentype = {2003072104: 100, 2003265652: 600}
+
+[sub_resource type="FontVariation" id="glass"]
+base_font = ExtResource("1_saira")
+variation_opentype = {2003072104: 75, 2003265652: 700}
+spacing_glyph = 1
+
+[sub_resource type="FontVariation" id="bar"]
+base_font = ExtResource("1_saira")
+variation_opentype = {2003072104: 125, 2003265652: 800}
+spacing_glyph = 1
+
+[sub_resource type="StyleBoxEmpty" id="glass_box"]
+content_margin_left = 10.0
+content_margin_top = 4.0
+content_margin_right = 10.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxEmpty" id="bar_box"]
+content_margin_left = 8.0
+content_margin_top = 22.0
+content_margin_right = 8.0
+content_margin_bottom = 4.0
+
+[sub_resource type="StyleBoxEmpty" id="empty"]
+
+[resource]
+default_font = SubResource("body")
+default_font_size = 22
+BarButton/base_type = &"Button"
+BarButton/colors/font_color = Color(0.07, 0.07, 0.06, 1)
+BarButton/colors/font_disabled_color = Color(0.3, 0.3, 0.3, 1)
+BarButton/colors/font_focus_color = Color(0.07, 0.07, 0.06, 1)
+BarButton/colors/font_hover_color = Color(0.0, 0.0, 0.0, 1)
+BarButton/colors/font_hover_pressed_color = Color(0.0, 0.0, 0.0, 1)
+BarButton/colors/font_pressed_color = Color(0.0, 0.0, 0.0, 1)
+BarButton/colors/font_outline_color = Color(1, 1, 1, 0.35)
+BarButton/constants/outline_size = 2
+BarButton/font_sizes/font_size = 24
+BarButton/fonts/font = SubResource("bar")
+BarButton/styles/disabled = SubResource("bar_box")
+BarButton/styles/focus = SubResource("empty")
+BarButton/styles/hover = SubResource("bar_box")
+BarButton/styles/hover_pressed = SubResource("bar_box")
+BarButton/styles/normal = SubResource("bar_box")
+BarButton/styles/pressed = SubResource("bar_box")
+DataLabel/base_type = &"Label"
+DataLabel/colors/font_color = Color(0.25, 1.9, 0.42, 1)
+DataLabel/fonts/font = SubResource("body_bold")
+DataValue/base_type = &"Label"
+DataValue/colors/font_color = Color(0.2, 1.3, 0.34, 1)
+GlassButton/base_type = &"Button"
+GlassButton/colors/font_color = Color(0.2, 1.5, 0.35, 1)
+GlassButton/colors/font_disabled_color = Color(0, 0, 0, 0)
+GlassButton/colors/font_focus_color = Color(0.3, 2.2, 0.5, 1)
+GlassButton/colors/font_hover_color = Color(0.3, 2.2, 0.5, 1)
+GlassButton/colors/font_hover_pressed_color = Color(0.85, 1.3, 0.92, 1)
+GlassButton/colors/font_pressed_color = Color(0.75, 1.15, 0.82, 1)
+GlassButton/colors/font_outline_color = Color(0, 0.12, 0.06, 1)
+GlassButton/constants/outline_size = 3
+GlassButton/font_sizes/font_size = 32
+GlassButton/fonts/font = SubResource("glass")
+GlassButton/styles/disabled = SubResource("glass_box")
+GlassButton/styles/focus = SubResource("empty")
+GlassButton/styles/hover = SubResource("glass_box")
+GlassButton/styles/hover_pressed = SubResource("glass_box")
+GlassButton/styles/normal = SubResource("glass_box")
+GlassButton/styles/pressed = SubResource("glass_box")
+Readout/base_type = &"Label"
+Readout/colors/font_color = Color(0.25, 1.9, 0.42, 1)
+Readout/fonts/font = ExtResource("2_mono")
+ScreenTitle/base_type = &"Label"
+ScreenTitle/colors/font_color = Color(0.25, 1.9, 0.42, 1)
+ScreenTitle/font_sizes/font_size = 36
+ScreenTitle/fonts/font = SubResource("title")
+StatusLabel/base_type = &"Label"
+StatusLabel/colors/font_color = Color(1.6, 1.5, 0.15, 1)
+StatusLabel/font_sizes/font_size = 22
+StatusLabel/fonts/font = SubResource("title")

@@ -1,0 +1,269 @@
+[gd_scene load_steps=11 format=3]
+
+[ext_resource type="Script" path="res://ui/screens/main_menu.gd" id="1_menu"]
+[ext_resource type="Script" path="res://ui/components/machine_panel.gd" id="2_panel"]
+[ext_resource type="PackedScene" path="res://ui/components/pillar.tscn" id="3_pillar"]
+[ext_resource type="Script" path="res://ui/components/cable_coil.gd" id="4_coil"]
+[ext_resource type="Script" path="res://ui/components/model_stage.gd" id="5_stage"]
+[ext_resource type="Shader" path="res://ui/shaders/screen.gdshader" id="6_screen"]
+
+[sub_resource type="Environment" id="glow_env"]
+background_mode = 3
+glow_enabled = true
+glow_intensity = 0.6
+glow_strength = 1.1
+glow_bloom = 0.0
+glow_blend_mode = 1
+glow_hdr_threshold = 1.0
+
+[sub_resource type="ShaderMaterial" id="screen_mat"]
+shader = ExtResource("6_screen")
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_menu")
+
+[node name="Glow" type="WorldEnvironment" parent="."]
+environment = SubResource("glow_env")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.043, 0.047, 0.039, 1)
+
+[node name="Frame" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/separation = 0
+
+[node name="LeftWing" type="Control" parent="Frame"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Pipe1" type="Control" parent="Frame/LeftWing"]
+layout_mode = 1
+anchor_top = 0.3
+anchor_right = 1.0
+anchor_bottom = 0.34
+script = ExtResource("2_panel")
+look = 1
+finish = 1
+cylinder = 1
+chamfer = 0.0
+bevel = 1.0
+
+[node name="Pipe2" type="Control" parent="Frame/LeftWing"]
+layout_mode = 1
+anchor_top = 0.78
+anchor_right = 1.0
+anchor_bottom = 0.85
+script = ExtResource("2_panel")
+look = 0
+cylinder = 1
+chamfer = 0.0
+bevel = 1.0
+
+[node name="LeftPillar" parent="Frame" instance=ExtResource("3_pillar")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="Centre" type="VBoxContainer" parent="Frame"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 8.0
+theme_override_constants/separation = 0
+
+[node name="ScreenFrame" type="Control" parent="Frame/Centre"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="Bezel" type="Control" parent="Frame/Centre/ScreenFrame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 14.0
+offset_right = -6.0
+offset_bottom = -6.0
+script = ExtResource("2_panel")
+look = 3
+chamfer = 34.0
+bevel = 9.0
+wear = 0.15
+rivet_inset = 16.0
+
+[node name="ClipL" type="Control" parent="Frame/Centre/ScreenFrame"]
+layout_mode = 1
+anchor_left = 0.12
+anchor_right = 0.24
+offset_top = 2.0
+offset_bottom = 30.0
+script = ExtResource("2_panel")
+chamfer = 6.0
+bevel = 3.0
+hazard = Rect2(0.06, 0.25, 0.88, 0.45)
+
+[node name="ClipR" type="Control" parent="Frame/Centre/ScreenFrame"]
+layout_mode = 1
+anchor_left = 0.76
+anchor_right = 0.88
+offset_top = 2.0
+offset_bottom = 30.0
+script = ExtResource("2_panel")
+chamfer = 6.0
+bevel = 3.0
+hazard = Rect2(0.06, 0.25, 0.88, 0.45)
+
+[node name="Screen" type="Control" parent="Frame/Centre/ScreenFrame"]
+clip_contents = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 36.0
+offset_top = 44.0
+offset_right = -36.0
+offset_bottom = -36.0
+mouse_filter = 2
+
+[node name="Black" type="ColorRect" parent="Frame/Centre/ScreenFrame/Screen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+color = Color(0.008, 0.016, 0.012, 1)
+
+[node name="Stage" type="SubViewportContainer" parent="Frame/Centre/ScreenFrame/Screen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("5_stage")
+
+[node name="Page" type="Control" parent="Frame/Centre/ScreenFrame/Screen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="ScreenOverlay" type="ColorRect" parent="Frame/Centre/ScreenFrame/Screen"]
+unique_name_in_owner = true
+material = SubResource("screen_mat")
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+mouse_filter = 2
+
+[node name="StatusRow" type="HBoxContainer" parent="Frame/Centre"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+theme_override_constants/separation = 0
+
+[node name="CoilL" type="Control" parent="Frame/Centre/StatusRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+script = ExtResource("4_coil")
+
+[node name="StatusHousing" type="Control" parent="Frame/Centre/StatusRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+script = ExtResource("2_panel")
+look = 2
+finish = 2
+chamfer = 6.0
+bevel = 3.0
+recess = Rect2(0.01, 0.16, 0.98, 0.68)
+
+[node name="Status" type="Label" parent="Frame/Centre/StatusRow/StatusHousing"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_type_variation = &"StatusLabel"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CoilR" type="Control" parent="Frame/Centre/StatusRow"]
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+script = ExtResource("4_coil")
+color = Color(0.16, 0.24, 0.75, 1)
+
+[node name="Bar" type="Control" parent="Frame/Centre"]
+custom_minimum_size = Vector2(0, 118)
+layout_mode = 2
+
+[node name="BarHousing" type="Control" parent="Frame/Centre/Bar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -4.0
+mouse_filter = 2
+script = ExtResource("2_panel")
+look = 2
+finish = 2
+chamfer = 12.0
+rivet_inset = 10.0
+
+[node name="BarButtons" type="HBoxContainer" parent="Frame/Centre/Bar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 26.0
+offset_top = 12.0
+offset_right = -26.0
+offset_bottom = -16.0
+theme_override_constants/separation = 12
+
+[node name="RightPillar" parent="Frame" instance=ExtResource("3_pillar")]
+unique_name_in_owner = true
+layout_mode = 2
+mirrored = true
+
+[node name="RightWing" type="Control" parent="Frame"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="Pipe1" type="Control" parent="Frame/RightWing"]
+layout_mode = 1
+anchor_top = 0.3
+anchor_right = 1.0
+anchor_bottom = 0.34
+script = ExtResource("2_panel")
+look = 1
+finish = 1
+cylinder = 1
+chamfer = 0.0
+bevel = 1.0
+
+[node name="Pipe2" type="Control" parent="Frame/RightWing"]
+layout_mode = 1
+anchor_top = 0.78
+anchor_right = 1.0
+anchor_bottom = 0.85
+script = ExtResource("2_panel")
+look = 0
+cylinder = 1
+chamfer = 0.0
+bevel = 1.0

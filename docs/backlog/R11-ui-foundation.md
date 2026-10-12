@@ -11,6 +11,25 @@ Status: **active**
   original's lettering.
 - Design direction, palette, typography and references: `remake/UI-DESIGN.md`.
 
+## Progress (2026-10-12)
+- First style frame: `remake/game/ui/screens/main_menu.tscn` (main menu with the original's
+  arrangement, menu tree from array 8611, hover/status line, LED bar, a 3D Prowler turntable in
+  the centre screen, power-on sweep). Render it with
+  `godot --path remake/game res://ui/screens/main_menu.tscn -- --shots <dir> --size 1920x1080 --select 2,0`.
+  Checked at 1920x1080, 3840x1600 and 3840x2160: layout holds, and text and edges are sharp at 4K.
+- Kit so far (`remake/game/ui/`): `shaders/machine.gdshader` (SDF machinery panels: paint, brushed
+  steel, cast iron, bevels, hazard stripes, recesses/vents, rivets), `shaders/glass.gdshader`
+  (glass slots/buttons), `shaders/screen.gdshader` (screen vignette, scanlines, power-on);
+  components `MachinePanel`, `GlassButton`, `BarButton`, `CableCoil`, `ModelStage`, `Pillar`;
+  `theme/main_theme.tres` (Saira variations, type variations GlassButton, BarButton,
+  StatusLabel, ScreenTitle, DataLabel, DataValue, Readout); `theme/ui_palette.gd`.
+- Project: base 1920x1080, `canvas_items` stretch with `expand` aspect, `hdr_2d` on (phosphor
+  text and LEDs use HDR colours and bloom through a 2D WorldEnvironment glow), project theme set.
+- Fonts render as normal dynamic fonts; Godot's automatic oversampling keeps them sharp, so
+  MSDF is kept for 3D text (cockpit instruments, R17).
+- Next: user review of the style frame; authored hi-res material maps (replace the noise);
+  keyboard/gamepad focus pass; gallery scene; UI sounds; router.
+
 ## Goal
 A sharp, modern, resolution-independent UI kit for the remake, built from scratch the
 Godot-native way. It mixes **vector elements** (crisp at any size) with **high-resolution
