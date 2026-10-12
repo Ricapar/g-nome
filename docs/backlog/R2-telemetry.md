@@ -74,7 +74,7 @@ runs can be compared numerically. R1 (orientation) and R3 (movement) are checked
   `AddObject` (5 args), `GetFrameRate`, `GetCameraPos(&x,&y,&z)`, `GetCameraYaw()`.
 - Units (analysis.md "Missions, units and layouts"): game units, 600 = one ground tile,
   model units = game units / 100. Layout headings are hundredths of a degree. Layout rows are
-  `[unit_row, runtime_id, x, z, y, heading*100, flag]`; the exported copy is
+  `[unit_row, runtime_id, x, z, level_flag, heading*100, flag]`; the exported copy is
   `remake/game/_import/data/layouts.json` (mission 1-1 = array 8743, 76 rows).
 
 ### RENDER.R32 (base 0x10000000; `.data` 0x10037000–0x10042db0)

@@ -217,7 +217,7 @@ def main():
         if m["layout_array"]:
             dims, v = res7l.read_array(bin_path, ents[m["layout_array"]])
             layouts[m["layout_array"]] = [
-                dict(zip(["unit_row", "runtime_id", "x", "z", "y", "heading", "flag"],
+                dict(zip(["unit_row", "runtime_id", "x", "z", "level_flag", "heading", "flag"],
                          v[i * dims[1]:(i + 1) * dims[1]])) for i in range(1, dims[0])]
     dump("layouts.json", layouts)
     print("strings %d, missions %d (objective groups %d), worlds %d, objects %d, arrays %d, "

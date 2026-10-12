@@ -161,8 +161,8 @@ loader `FUN_100043f0` (`docs/analysis.md` "Object templates"). RTLIB32 has no FR
   speed? This is the main R3 coupling.
 - Shear or mirrored matrices (det < 0) can't be expressed in TRS. If any exist, bake them or
   keep `matrix` on non-animated nodes.
-- Handedness (R1): any axis flip applied to models later must also be applied to animation
-  tracks.
+- Handedness (R1, done): no axis flip is needed. Raw RW coordinates are used unmirrored, so
+  animation tracks can be exported as-is too.
 - 22 FRMEs are not referenced by a literal id. They may be reached through arrays or be
   unused. Check against `arrays.json`.
 - `AnimateModelFrame` on props 79 and 81 (scripts 1742/1743, 4398/4399) animates scenery or

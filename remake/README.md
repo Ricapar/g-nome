@@ -52,7 +52,9 @@ Status: Phase 0 in progress. Nothing playable yet.
          table → JSON (`tools/export_gamedata.py`)
    - [ ] FRME animations → glTF animations
    - [ ] sprites/UI → PNG with the correct palette; waves → WAV; SMK → modern video
-2. [x] Model viewer and **mission viewer** (`remake/game/viewer/mission_viewer.tscn`):
+2. [x] Model viewer and **mission viewer** (`remake/game/viewer/mission_viewer.tscn`,
+   orientation verified against the original in R1; PgUp/PgDn mission, WASD/QE + right-drag
+   fly, Home back to the player start's cockpit view):
    places a mission's layout with the original models, world ground, backdrop sky and fog.
 3. [x] Terrain: mission 1-1 is a flat tiled plane plus a backdrop panorama plus placed
    objects (no heightfield). Other missions get checked once scripts can be read.

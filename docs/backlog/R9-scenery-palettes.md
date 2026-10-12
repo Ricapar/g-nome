@@ -8,6 +8,12 @@ every campaign mission shows the colours the original shows: trees, river pieces
 ground tiles and rocks. It's done when viewer renders of missions from worlds 1, 2 and 3 match
 windowed screenshots of the original, with no desert-palette colours on world-1..3 scenery.
 
+## Also seen during R1 (2026-10-12)
+- In the 1-1 start view, the tree and bush billboards render as black boxes around the sprite
+  (no colour-key/alpha transparency), and the nearby rock ridges look like flat pale sand.
+  The original shows textured rock; the fog end (`fog_depth * 1.5`) may also be too short.
+  Compare `%TEMP%1\start.png`-style original shots with the viewer default render.
+
 ## Background
 - The original draws everything through **one global 8-bit screen palette** that is chosen per
   mission (array 2512, script 2514). A texture pixel with index i shows palette entry i of the

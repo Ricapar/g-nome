@@ -21,7 +21,7 @@ anywhere.
 | ID | Item | Spec | Status |
 |---|---|---|---|
 | R0 | Fix exporter data bugs (category swap, bounds) and fold spec findings into analysis.md | [R0-data-fixes.md](backlog/R0-data-fixes.md) | todo |
-| R1 | Fix mission viewer orientation against the original (heading/handedness) | [R1-orientation.md](backlog/R1-orientation.md) | todo |
+| R1 | Fix mission viewer orientation against the original (heading/handedness) | [R1-orientation.md](backlog/R1-orientation.md) | done |
 | R2 | Telemetry hook: log player/entity state per tick from the original game | [R2-telemetry.md](backlog/R2-telemetry.md) | todo |
 | R3 | Decode HAWC and soldier movement in RENDER.R32 and the unit scripts | [R3-movement.md](backlog/R3-movement.md) | todo |
 | R4 | Decode FRME animations and export them to glTF | [R4-frme-animations.md](backlog/R4-frme-animations.md) | todo |

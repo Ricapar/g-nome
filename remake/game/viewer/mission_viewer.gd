@@ -4,9 +4,15 @@ extends Node3D
 ## Data comes from tools/export_gamedata.py + tools/export_models.py (res://_import).
 ## Coordinates: game units / 100 = model units (600-unit ground tiles are 6 model units).
 ## Headings are hundredths of a degree.
+## Orientation (R1, verified against the original): raw game x/z map to Godot X/Z unmirrored,
+## a heading h is rotation_degrees.y = h/100, and objects face local +Z, so the camera looks
+## along +Z rotated by the heading (Godot yaw = h/100 + 180).
 ## Controls: PgUp/PgDn = mission, WASD/QE + right-drag = fly, Shift = fast, Home = player start.
 ## Screenshot mode: godot --path remake/game res://viewer/mission_viewer.tscn -- \
-##                  --shots <outdir> <mission-code>[,...] [--from-start] [--top]
+##                  --shots <outdir> <mission-code>[,...] [--top]
+## Orientation experiments (R1): --forward <+1|-1> (model forward along local +Z or -Z),
+## --heading-sign <+1|-1>, --mirror-z, --fov <deg>, --eye <model units>, --size <w>x<h>,
+## --turn <deg> (look right of the start heading), --top-at <x>,<z> and --top-height <h> (with --top).
 
 const DATA := "res://_import/data/"
 const MODELS := "res://_import/models/"
@@ -29,6 +35,11 @@ var _pitch := -15.0
 var _start := Vector3.ZERO
 var _start_heading := 0.0
 var _rock_tex: Texture2D
+# Orientation convention (see docs/analysis.md "Orientation and camera"): overridable for experiments.
+var _forward := 1.0
+var _heading_sign := 1.0
+var _mirror_z := false
+var _eye := 0.44  # cockpit camera: AttachCamera(player, 0, 0, 44, 0)
 
 
 func _ready() -> void:
@@ -50,17 +61,33 @@ func _ready() -> void:
 	sun.shadow_enabled = true
 	add_child(sun)
 	_cam.far = 400.0
+	_cam.fov = 50.0  # vertical; fitted to the original's 640x480 start view (R1)
 	add_child(_cam)
 	var layer := CanvasLayer.new()
 	add_child(layer)
 	_info.position = Vector2(8, 8)
 	layer.add_child(_info)
 	var args := OS.get_cmdline_user_args()
+	_forward = float(_arg(args, "--forward", str(_forward)))
+	_heading_sign = float(_arg(args, "--heading-sign", str(_heading_sign)))
+	_mirror_z = args.has("--mirror-z")
+	_eye = float(_arg(args, "--eye", str(_eye)))
+	_cam.fov = float(_arg(args, "--fov", str(_cam.fov)))
+	var size := _arg(args, "--size", "")
+	if size != "":
+		var wh := size.split("x")
+		get_window().size = Vector2i(int(wh[0]), int(wh[1]))
+		get_window().content_scale_size = get_window().size
 	var i := args.find("--shots")
 	if i >= 0 and args.size() > i + 2:
 		_run_shots(args[i + 1], args[i + 2].split(","), args.has("--top"))
 	else:
 		_load_mission(0)
+
+
+func _arg(args: PackedStringArray, name: String, default: String) -> String:
+	var i := args.find(name)
+	return args[i + 1] if i >= 0 and i + 1 < args.size() else default
 
 
 func _json(name: String) -> Variant:
@@ -87,6 +114,8 @@ func _load_mission(i: int) -> void:
 	if _root:
 		_root.queue_free()
 	_root = Node3D.new()
+	if _mirror_z:
+		_root.scale.z = -1
 	add_child(_root)
 	var m: Dictionary = missions[_index]
 	var w: Dictionary = worlds[int(m.get("world_row", 0))]
@@ -101,7 +130,10 @@ func _load_mission(i: int) -> void:
 		var props: Array = u.get("template_props", [])
 		if props.size() < 2:
 			continue
-		var pos := Vector3(e["x"], e["y"], e["z"]) * SCALE
+		# level_flag 1 raises the object to height G1846 (never set by a script; unknown), so 0 here
+		var pos := Vector3(e["x"], 0, e["z"]) * SCALE
+		if int(u["category"]) == 252:
+			pos += _corner_offset(int(e["heading"])) * SCALE
 		var heading := float(e["heading"]) / 100.0
 		if first:
 			_start = pos
@@ -113,12 +145,22 @@ func _load_mission(i: int) -> void:
 		if int(u["category"]) == 250 and _rock_tex:
 			_retexture(node, _rock_tex)
 		node.position = pos
-		node.rotation_degrees.y = heading
+		node.rotation_degrees.y = heading * _heading_sign
 		_root.add_child(node)
 		placed += 1
 	_info.text = "%s  %s   world %s   objects %d   (PgUp/PgDn, WASD, right-drag)\n%s" % [
 		m["code"], m["name"], m.get("world_row"), placed, "\n".join(m["objectives"])]
 	_goto_start()
+
+
+## script_2524: category-252 pieces (1200x1200, origin at a corner) are listed by their centre;
+## the spawner moves the origin to the corner that the heading puts at local (0, 0).
+func _corner_offset(heading: int) -> Vector3:
+	match heading:
+		9000: return Vector3(-600, 0, 600)
+		18000, -18000: return Vector3(600, 0, 600)
+		-9000, 27000: return Vector3(600, 0, -600)
+	return Vector3(-600, 0, -600)
 
 
 func _retexture(n: Node, tex: Texture2D) -> void:
@@ -170,9 +212,11 @@ func _setup_world(w: Dictionary) -> void:
 
 
 func _goto_start() -> void:
-	_cam.position = _start + Vector3(0, 1.2, 0)
-	_yaw = _start_heading
-	_pitch = -5.0
+	# The start pose is in game space; map it through the world root (which may mirror).
+	_cam.position = _root.transform * (_start + Vector3(0, _eye, 0))
+	var fwd := _root.basis * (Basis(Vector3.UP, deg_to_rad(_start_heading * _heading_sign)) * Vector3(0, 0, _forward))
+	_yaw = rad_to_deg(atan2(-fwd.x, -fwd.z))
+	_pitch = 0.0
 	_apply_cam()
 
 
@@ -212,8 +256,16 @@ func _run_shots(outdir: String, codes: PackedStringArray, top: bool) -> void:
 				_load_mission(k)
 		if top:
 			_env.fog_enabled = false
-			_cam.position = _start + Vector3(0, 120, 0)
-			_pitch = -89
+			var c := _arg(OS.get_cmdline_user_args(), "--top-at", "")
+			var at := _start
+			if c != "":
+				var xz := c.split(",")
+				at = _root.transform * (Vector3(float(xz[0]), 0, float(xz[1])) * SCALE)
+			_cam.position = at + Vector3(0, float(_arg(OS.get_cmdline_user_args(), "--top-height", "120")), 0)
+			_cam.rotation_degrees = Vector3(-90, 0, 0)
+		else:
+			# --turn <deg>: look right (positive) or left (negative) of the start heading
+			_yaw -= float(_arg(OS.get_cmdline_user_args(), "--turn", "0"))
 			_apply_cam()
 		for f in 4:
 			await RenderingServer.frame_post_draw

@@ -280,8 +280,10 @@ Ground: per-world scripts (e.g. 2418 = desert, called from 2514) place tile obje
   `script_2515(bounds…)` → setup `script_8736(1, 8743)` (sets world row via
   `script_2513(row)`, camera/LOD) → `script_2523(1, 8743, 0)` = **spawn the layout** →
   `script_8737` (mission start: player, objectives, …).
-- **Layout arrays** (e.g. 8743, 76 x 7): `[unit_row, runtime_id, x, z, y, heading*100, flag]`
-  in game units. `script_2523` fills column 1 with the spawned object id, so later scripts find
+- **Layout arrays** (e.g. 8743, 76 x 7): `[unit_row, runtime_id, x, z, level_flag,
+  heading*100, flag]` in game units. `level_flag` is not a coordinate: in `script_2040`/`2041`
+  the height is `h = 0; if (level_flag == 1) h = G1846` (6 of 4537 rows set it; no script
+  assigns G1846, so its value is still unknown). `script_2523` fills column 1 with the spawned object id, so later scripts find
   units by layout row. Row 1 of 1-1 is the player: Union infantry, on foot.
 - **Unit catalogue = array 5843** (197 x 5): `[template, init script, class, category,
   variant]`. Categories: 141 Sentry, 142 Tactical Defense, 143 Cruiser, 144 Heavy Assault
@@ -289,7 +291,9 @@ Ground: per-world scripts (e.g. 2418 = desert, called from 2514) place tile obje
   250 rock formations, 251-255 scenery, 500 waypoint, 550-553 nav/supply, 570 ?.
   Rows 0-23 = Union / Darken / Merc / Scorp vehicles + infantry. They match LABTEXT.DAT
   (`tools/export_gamedata.py` joins them). Template props[1..7] = the same model in 7 team
-  colours. `script_2039(class, template, x, z, heading, y, category)` instantiates a unit.
+  colours. `script_2039(class, template, x, z, heading, level_flag, category)` instantiates a unit:
+  `script_2040`/`2041` call `AddObject(obj, 0, x, h, z)`, then `ObjectYaw(obj, heading)`,
+  then `UpdatePosOrient(obj, 1)`.
 - **Unit init scripts** (catalogue column 1, e.g. 2619 → 2631 for the Union Prowler) set:
   codex stat A (`script_2056` → props 97/94/134) and stat B (`script_2057` → 95/98/135);
   turn/accel limits (SetMaxAngularVelocity/Accel, SetMaxAccel); weapons
@@ -307,6 +311,36 @@ Ground: per-world scripts (e.g. 2418 = desert, called from 2514) place tile obje
   `ClumpBegin` makes the CTM the child's local transform and resets it to identity inside.
   Rock models rely on the first rule.
 
+### Orientation and camera (R1, verified 2026-10-12)
+Checked by rendering the mission viewer under all combinations of forward axis, heading sign
+and Z mirror, and comparing them with windowed screenshots of the original (1-1 start view,
+turned left and right) and with the tiling of category-252 pieces (1-3 top view).
+- **No mirror.** Raw game `x`/`z` map straight onto Godot X/Z (and model space is raw RW, see
+  "Model stream"). At the 1-1 start the dead tree is on the left and the bush and walker are
+  just left of centre, as in the original. Mirrored renders swap them.
+- **Heading sign +1.** `ObjectYaw(h)` equals Godot `rotation_degrees.y = h/100`: positive
+  headings turn +X toward -Z. Proof: the category-252 trench in 1-3 is continuous with +1 and
+  broken with -1.
+- **Objects face local +Z.** The camera looks along `Basis(Y, h) * +Z`, i.e. Godot camera yaw
+  = h/100 + 180. The chase camera `AttachCamera(obj, 0, 0, 10, -20)` (`script_2170`) sits
+  behind the object at negative z. The cockpit camera is `AttachCamera(G973, 0, 0, 44, 0)`
+  (`script_2191`) or `AttachCamera(G973, GetProperty(G973, 10), 0, L1, 0)` (`script_2171`).
+  Facing -Z (the old viewer default) put the 1-1 start camera against the map-edge rocks.
+- **Category 252** (`script_2524`): 1200x1200 pieces whose model origin is a corner (local
+  [0,1200]^2). The layout gives the centre, and the spawner first moves to the corner:
+  0 → (-600,-600), 9000 → (-600,+600), 18000 → (+600,+600), -9000 → (+600,-600), i.e.
+  `origin = centre - R(h)*(600,600)`.
+- **Mission start camera**: `script_2528` runs `SetCamera(x_row1, 0, z_row1, 0, 0, 100)`, and
+  the camera is then attached to the player. The meaning of the 6th argument is unverified.
+  `SetCameraYaw(G1819)` (G1819 = 0) is a look offset. `SetCameraClipping(10, 3000|5000|7000)`
+  by detail level `G2117` (`script_2529`), so near = 0.1 model units.
+- **FOV (measured, not decoded)**: about **50 degrees vertical** at 640x480 (64 degrees horizontal), with pitch
+  0 (horizon on the screen centre line). Fitted from the bush and tree positions at the 1-1
+  start, to within a few pixels. The exact value still needs `SetCamera` /
+  `RwSetCameraViewwindow` in RENDER.R32.
+- **Mission bounds** `script_2515(a, b, c, d)` → G1833..G1836. The ground loops run x from
+  G1834 to G1833 and z from G1836 to G1835 (1-1: x in [-9150, 10200], z in [-10200, 3000]).
+
 ## Remake-relevant (Goal 2)
 - All gameplay logic is in script bytecode (key 5) + RENDER.R32 natives (AI tasks/goals,
   movement behaviours: pursue/evade/flock/follow, collision, projectiles, damage/health).
@@ -314,8 +348,8 @@ Ground: per-world scripts (e.g. 2418 = desert, called from 2514) place tile obje
 - Assets (models, textures, sprites, audio, FMV) are all extractable from the 7L archive.
   Models and textures: done (`tools/export_models.py` → `remake/game/_import/`, viewed with
   the Godot model viewer). Not yet decoded: FRME animations, OB3D/OPRT object definitions,
-  which of the 14 palettes applies where, model units vs metres, and handedness (needs a
-  mirrored-text check).
+  which of the 14 palettes applies where, and model units vs metres. Handedness is settled
+  (no mirror, see "Orientation and camera").
 - **Terrain** (2026-10-12). Mission 1-1 has **no heightfield**: RENDER's ground pointer
   `DAT_10037ae4` is NULL in the cockpit (read with `tools/dev/peek.exe`). The playfield is a
   flat plane of ground tiles: MPRT quads textured `<world>grd<bits>.bmp`, e.g. `dgrd1000` /

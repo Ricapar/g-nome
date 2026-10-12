@@ -1,6 +1,24 @@
 # R1: Fix mission viewer orientation against the original
 
-Status: **todo**
+Status: **done** (2026-10-12)
+
+## Result
+- **No mirror; heading sign +1; objects face local +Z.** A heading h becomes
+  `rotation_degrees.y = h/100` on raw x/z, and the camera looks along `Basis(Y, h) * +Z`
+  (Godot yaw = h/100 + 180). The spec's expected answer was right.
+- Evidence: the 1-1 start view in the original (dead tree on the left; bush and walker just
+  left of centre) matches only forward +Z without a mirror. Turning right 15 degrees in the
+  viewer matches the original's turn-right shot (close rock wall on the right). The 1-3
+  trench of category-252 pieces is continuous only with sign +1, with the `script_2524`
+  corner offset applied (now in the viewer). The start heading of 180 can't separate the
+  sign; the walker can't either, since it is an AI unit and keeps changing pose.
+- FOV measured at about 50 degrees vertical at 640x480, pitch 0. Eye height 0.44 (cockpit `AttachCamera` y=44).
+  These are the viewer defaults now.
+- Exporter key `y` → `level_flag`; `--from-start` removed. New viewer flags: `--forward`,
+  `--heading-sign`, `--mirror-z`, `--fov`, `--eye`, `--size`, `--turn`, `--top-at`,
+  `--top-height`.
+- Not done (open): the exact FOV and `SetCamera`'s 6th argument from RENDER.R32; the value
+  of G1846. Visual gaps seen during the comparison went to R9.
 
 ## Goal
 Make the Godot mission viewer (`remake/game/viewer/mission_viewer.gd`) place and view a

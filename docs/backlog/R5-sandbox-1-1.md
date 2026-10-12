@@ -26,7 +26,7 @@ placeholders and are marked as such in code.
 - Main script 8744: `script_2515(10200, -(9150), 3000, -(10200))` → setup 8736 (world row 0
   = desert) → `script_2523(1, 8743, 0)` spawns layout array 8743 → `script_8746` stores ids →
   `script_8737` starts the mission (`docs/analysis.md` "Missions, units and layouts").
-- Layout 8743 has 75 rows of `[unit_row, runtime_id, x, z, y, heading*100, flag]`:
+- Layout 8743 has 75 rows of `[unit_row, runtime_id, x, z, level_flag, heading*100, flag]`:
   - row 1: Union infantry (unit row 5, init 2834 → 2842, model 2813) at (-4950, 75), heading
     18000. `script_8737` sets `G973 = row 1 object`, so **G973 is the player object**.
   - rows 2–6 = `G33[0..4]`: 2 Merc Sentry HAWCs "Ogre" (unit 11, init 3108 → 3119, model
@@ -153,7 +153,8 @@ Sandbox1_1 (Node3D, sandbox.gd)       loads data, spawns, owns the player contro
 └─ Debug (CanvasLayer)                speed, throttle, heading, bounds warning, FPS
 ```
 - Shared code goes into `remake/game/core/`: `units.gd` (one constant `M_PER_UNIT = 0.125`,
-  heading conversion from R1, `game_to_world()`), `gamedata.gd` (JSON loading, cached),
+  heading conversion from R1: no mirror, `rotation_degrees.y = h/100`, forward = local +Z,
+  `game_to_world()`), `gamedata.gd` (JSON loading, cached),
   `model_cache.gd` (the viewer's `_model()`). The viewer is switched to it as well.
 - Work in **metres** (game units × 0.125). The glTFs are in model units (game/100), so the
   visual slot scales them by 12.5. Using metres keeps Godot physics defaults sane. If the

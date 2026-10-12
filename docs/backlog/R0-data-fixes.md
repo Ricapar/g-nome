@@ -28,12 +28,10 @@ independently. The bugs listed below were found by at least two agents or have c
 2. **Mission bounds are truncated by a regex.** `missions.json` has `"10200, -(9150"`. Real
    1-1 bounds: xmax 10200, xmin −9150, zmax 3000, zmin −10200 (`script_2515` → G1833..G1836).
    See R5 and R1.
-3. **Layout column 4 is mislabelled `y`.** It is a flag: 1 means "use height G1846". It is 0
-   in every 1-1 row. Rename it in the export and the viewer. See R1.
+3. ~~**Layout column 4 is mislabelled `y`.**~~ Done in R1: exported as `level_flag`.
 4. `tools/bitmap7l.py` docstring says LZW is not implemented. It is (`decompress_chunks`), and
    72 sprites use it. See R8.
-5. Minor: `mission_viewer.gd` documents a `--from-start` flag that is never read (R1). Fix it
-   as part of R1 if convenient.
+5. ~~Minor: `--from-start` flag never read.~~ Done in R1: removed from the header comment.
 
 ## analysis.md corrections (found by the specs; check each one)
 - "Template props[1..7] = same model in 7 team colours" is wrong. Props 1/4/7 = LOD0/1/2, and
