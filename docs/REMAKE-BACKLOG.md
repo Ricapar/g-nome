@@ -9,7 +9,10 @@ item's spec first.
 
 Status: `todo`, `active` or `done`. Update the status here and in the spec when it changes.
 
-Recommended order: R1 → R0 → R2 → R3 → R5 → R4 → R6 → R7. R8 and R9 can be slotted in
+UI track (added 2026-10-12): R10 → R11 → R12 → R16 → R17, with R13, R14 and R15 after R12.
+It runs alongside the gameplay track. R11 (design system) can start any time; R17 needs R5.
+
+Recommended order (gameplay): R1 → R0 → R2 → R3 → R5 → R4 → R6 → R7. R8 and R9 can be slotted in
 anywhere.
 - R0 fixes data bugs that R3, R5 and R6 rely on, notably swapped vehicle categories in
   `units.json`.
@@ -30,3 +33,11 @@ anywhere.
 | R7 | AI: decode the unit AI scripts and behaviours | [R7-ai.md](backlog/R7-ai.md) | todo |
 | R8 | Remaining exporters: sprites/UI, waves, Smacker video | [R8-exporters.md](backlog/R8-exporters.md) | todo |
 | R9 | Per-world colours for scenery other than rocks in the mission viewer | [R9-scenery-palettes.md](backlog/R9-scenery-palettes.md) | todo |
+| R10 | UI: decode the original menu system (screens, buttons, actions, sprites) | [R10-menu-decode.md](backlog/R10-menu-decode.md) | todo |
+| R11 | UI: design system and Godot UI foundation (theme, components, vector + hi-res) | [R11-ui-foundation.md](backlog/R11-ui-foundation.md) | todo |
+| R12 | UI: front-end menu shell in Godot | [R12-menu-shell.md](backlog/R12-menu-shell.md) | todo |
+| R13 | UI: briefing, debriefing, campaign progression, save/load | [R13-briefing-campaign.md](backlog/R13-briefing-campaign.md) | todo |
+| R14 | UI: options, controls/rebinding, pause menu | [R14-options-pause.md](backlog/R14-options-pause.md) | todo |
+| R15 | UI: the Lab (vehicle database, trivia, 3D turntable) | [R15-lab.md](backlog/R15-lab.md) | todo |
+| R16 | HUD: decode the original cockpit HUD elements and views | [R16-hud-decode.md](backlog/R16-hud-decode.md) | todo |
+| R17 | HUD: the remake HUD and cockpit views | [R17-hud.md](backlog/R17-hud.md) | todo |

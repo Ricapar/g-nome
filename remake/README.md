@@ -25,6 +25,7 @@ Status: Phase 0 in progress. Nothing playable yet.
 | Assets | New art will be made over time. Until then, the original assets imported from the user's disc serve as **placeholders and scale references** (blockouts). |
 | Engine | Godot 4 (MIT). |
 | Repo | Lives in this repo under `remake/`, on branch `remake`. The RE notes and tools in the repo root stay the source of truth for formats. |
+| UI (menus, HUD, briefing, Lab, options) | **Built from scratch, Godot-native**, and much sharper than the original: a project `Theme` and components laid out with containers and anchors, resolution-independent up to 4K and ultrawide. It mixes **vector elements** (StyleBoxes, SVG, `_draw`/shaders, MSDF fonts) with **high-res textures**. The original UI is reference only for flow, content and behaviour; its bitmaps are never used as UI placeholders. See backlog R10-R17. |
 
 ### What this means in practice
 - **Data and art are kept apart.** Each vehicle, weapon or prop is a data definition

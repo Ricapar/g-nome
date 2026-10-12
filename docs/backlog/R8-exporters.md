@@ -8,7 +8,8 @@ Export every remaining asset type from the retail disc into formats Godot 4 can 
 - type-12 waves (and the loose `.WAV` files) → PCM WAV;
 - `*.SMK` Smacker movies → a video format Godot plays (Ogg Theora), plus an optional lossless master.
 
-These give the remake placeholders for the menus, HUD/cockpit, Lab, briefings, sounds and FMV.
+These give the remake placeholders for sounds and FMV, and **reference images** (not placeholder
+art) for the menus, HUD/cockpit, Lab and briefings: the new UI is built from scratch (R11).
 Original data is never committed: all outputs go to `remake/game/_import/` (gitignored).
 
 ## Background
@@ -197,7 +198,8 @@ Original data is never committed: all outputs go to `remake/game/_import/` (giti
 ## Dependencies
 - None blocking. Related items:
   - R9 shares the palette logic (mission palettes 186..245).
-  - R5 needs cockpit/HUD sprites and weapon/engine sounds as placeholders.
+  - R5 needs weapon/engine sounds as placeholders. Cockpit/HUD sprites are reference only (R16, R17).
+  - R10 (menu decode) shares the type-20/21 sprite-structure work.
   - P5 covers the CD-audio music, which is not on the image and not covered here.
   - R2/`tools/dev/inject` infrastructure can be reused for PCM ground-truth capture.
 
