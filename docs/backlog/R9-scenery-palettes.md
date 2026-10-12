@@ -12,7 +12,8 @@ windowed screenshots of the original, with no desert-palette colours on world-1.
 - In the 1-1 start view, the tree and bush billboards render as black boxes around the sprite
   (no colour-key/alpha transparency), and the nearby rock ridges look like flat pale sand.
   The original shows textured rock; the fog end (`fog_depth * 1.5`) may also be too short.
-  Compare `%TEMP%1\start.png`-style original shots with the viewer default render.
+  Compare a `drive.ps1` shot of the 1-1 start (R1 plan step 1) with the viewer's default
+  render (`--shots <dir> 1-1 --size 640x480`).
 
 ## Background
 - The original draws everything through **one global 8-bit screen palette** that is chosen per
