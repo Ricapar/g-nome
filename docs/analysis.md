@@ -77,19 +77,55 @@ Index: 9440 entries of `{u8 type, u8 volume, u32 offset, u32 size}`.
 
 | Type | Magic | Count | Notes |
 |---|---|---|---|
-| 1 | — | 1240 | 2D sprite bitmaps (compressed; `DecompressBitmap*`) |
-| 2 | — | 835 | Textures; embed original path e.g. `\7thlevel\gnome\src\data\bitmaps\mesoonbl.BMP` |
+| 1 | — | 1240 | 2D sprite bitmaps (bitmap record, see below) |
+| 2 | — | 835 | Texture libraries: 1+ texture blocks each (2108 blocks, 923 unique names, path like `\7thlevel\gnome\src\data\bitmaps\mesoonbl.BMP`). A few entries hold other bitmaps or data; 211 are size 0 |
 | 4 | `FRME` | 333 | 3D animation frames |
-| 7 | `MODL` | 647 | 3D models — tokenized RWX-like stream (vertex 0x3c, uv 0x12/0x14, poly 0x23) |
-| 8 | `MPRT` | 154 | model parts |
+| 7 | `MODL` | 647 | 3D models: tokenized RenderWare script stream (see below) |
+| 8 | `MPRT` | 154 | model parts, same stream format |
 | 9 | `OB3D` | 426 | 3D object definitions |
 | 10 | `OPRT` | 57 | object properties |
 | 11 | — | 709 | sound/event records |
 | 12 | — | 592 | waves, 22050 Hz (~24 MB, voice + SFX) |
-| 13–22 | — | — | inline script-side resources |
+| 13–22 | — | — | inline resources inside the BIN; offsets are relative to the key-5 block (`res7l.read_internal`) |
+| 17 | — | 14 | palettes, 944 bytes = 236 x RGBx (entries 10..245); the first equals key 6 |
 
 Key resources: 4 = string constants (movie names, faction names, weapon names),
-5 = script bytecode (~1 MB, 11 chunks), 10 = plugin list, 11 = native import names.
+5 = script bytecode (~1 MB, 11 chunks), 6 = default palette (236 x RGBx), 10 = plugin list,
+11 = native import names.
+
+### Model stream (MODL/MPRT), decoded by `tools/rwstream.py`
+Header: magic + u32 (unknown), then u32 words. RENDER.R32 loads RWL20 exports by name
+(`FUN_10025193`, globals 0x10041218..), copies them into an opcode table at **0x10037050**
+(0x24-byte entries `{fn, argtype[8]}`, built by `FUN_100025e5`), and interprets the stream
+with **`FUN_10003432`**. Opcode n (1-based) is a RWX script call in alphabetical order:
+0x06 ClumpBegin, 0x07 ClumpEnd, 0x08 SetSurfaceColor, 0x1a/0x1b ModelBegin/End,
+0x23 Quad, 0x2c SetSurface, 0x2d SetTag, 0x2e SetSurfaceTexture(name), 0x34 TransformCTM(4x4),
+0x35/0x36 TransformBegin/End, 0x39 Triangle, 0x3b Vertex, 0x3c VertexExt, 0x3d/0x3e
+embedded texture. The full table and argument kinds are in `rwstream.py`.
+Structure: `TransformBegin; TransformCTM(M); ClumpBegin; SetTag t; vertices; surfaces;
+triangles; [children]; ClumpEnd; TransformEnd`. Each clump is a part with a local matrix
+(the CTM at ClumpBegin), clump-local vertices, 1-based vertex indices and a part tag. Tags
+are what FRME animations and `AmputateClump`/damage refer to. RW matrices are row-vector
+with translation in row 3, so the 16 floats map 1:1 onto glTF's column-major `matrix`.
+All 801 MODL/MPRT decode cleanly. `tools/export_models.py` → glTF (one node per clump).
+
+### Bitmaps and textures (`tools/bitmap7l.py`)
+Bitmap record: `u32 w, h, flags; i32 hot_x, hot_y; u32 resource_id`, then data.
+`RTLIB ResExpandBitmapRec` → `FUN_10044bd0`:
+- flags & 0x80: RLE (`FUN_100480d0`). Skip `u16 row_offsets[h]`. Per row: `b<0x80` = run of b
+  copies of the next byte, `b>=0x80` = literal of `b^0xff` bytes (0xff: count in the next
+  byte), 0 = end of row; another 0 ends the image.
+- otherwise: chunked LZW (`DecompressBitmapData`): u16 header, top 3 bits 0 = raw,
+  0x4000/0x6000/0x8000 = LZW 10/11/12-bit, 0xe000 = end; low 13 bits = length. An LZW chunk is
+  `[u16 len][stream]` sub-blocks, each with a fresh dictionary (`FUN_100356c0`, hand asm):
+  fixed-width MSB-first codes, literals 0..255, no clear code, end = all ones.
+  Rows are padded to a stride of 4.
+- flags & 0x40: rows are top-down; otherwise bottom-up (RENDER flips them).
+Texture block: `u32 0x3d|0x3e, u32 len (bytes from this word to the block end), u32
+name_len, name, bitmap record`. Textures are 128 wide (RENDER checks this), 128..512 tall,
+and often an atlas of faction colour variants (e.g. red/yellow halves). RENDER keeps a
+500-entry texture table keyed by basename (`FUN_100039cf`; lookup `FUN_10003fcb`).
+Pixel index i uses palette entry i-10 of a 236-entry palette (indices 0..9 = system colours).
 
 FMV: `*.SMK` (Smacker) — G-NOME, DREAM, CREDITS, NEWS, WILKINS. Music: CD audio
 tracks (not present in a data-only extraction) + `TRK_01B.WAV`.
@@ -201,4 +237,24 @@ One occurrence was without user input near the end of the intro. Unresolved.
   movement behaviours: pursue/evade/flock/follow, collision, projectiles, damage/health).
 - Unit stats in `LABTEXT.DAT` (vehicle database text), trivia in `TRIVIA.DAT/.IDX`.
 - Assets (models, textures, sprites, audio, FMV) are all extractable from the 7L archive.
-- Next: reverse the RTLIB32 bytecode interpreter to build a script disassembler.
+  Models and textures: done (`tools/export_models.py` → `remake/game/_import/`, viewed with
+  the Godot model viewer). Not yet decoded: FRME animations, OB3D/OPRT object definitions,
+  which of the 14 palettes applies where, model units vs metres, and handedness (needs a
+  mirrored-text check).
+- **Terrain** (2026-10-12). Mission 1-1 has **no heightfield**: RENDER's ground pointer
+  `DAT_10037ae4` is NULL in the cockpit (read with `tools/dev/peek.exe`). The playfield is a
+  flat plane of ground tiles: MPRT quads textured `<world>grd<bits>.bmp`, e.g. `dgrd1000` /
+  `dgrd1101` for desert and `igrd*` for another world set. The 4-digit suffix looks like a
+  neighbour/transition mask. The scenery is placed as 3D objects, and the mountains and sky
+  are a backdrop bitmap (`SetCameraBackdrop`). RENDER *does* support a heightfield:
+  `AddGround(obj, res, x, y, z)` (0x100193a0) reads `int nx, nz, cell`, an optional texture
+  block (0x3d), an optional texture name (0x2e + len + name), then nx*nz sectors of
+  `{int n; n * float xyz; 0x23 → polygon data (FUN_10019542) | other word}`. The sector grid
+  spans ±n*cell with a step of 2*cell, and the height is bilinear inside a quad
+  (`FUN_1001a012`, used by `UpdateGroundHeight`). The script imports it, but no resource with
+  that layout was found statically. Check other missions once the script disassembler exists.
+- OB3D/OPRT are serialised script objects: a list of tagged values. 0x1e = class (type 19
+  bytecode), 0x13 = method (type 19), 0x2 = float, 0x7 = resource reference (e.g. a wave),
+  0x6 = ?. Decode them together with the script VM.
+- Next: the RTLIB32 bytecode interpreter → script disassembler (missions, objectives,
+  object placement, backdrop/ground choices per mission).

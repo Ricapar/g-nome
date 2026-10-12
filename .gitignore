@@ -12,3 +12,7 @@ tools/dev/*.exp
 tools/dev/*.log
 tools/dev/*.png
 __pycache__/
+# remake: original game data extracted from the user's disc (copyrighted)
+remake/game/_import/
+remake/game/.godot/
+.venv/

@@ -3,9 +3,11 @@
 ## Goals
 1. **Patch** the retail G-Nome (7th Level, 1997, Win95) so it runs well on modern Windows. This
    is largely done; see README.md "Status".
-2. **Later: a remake** on a modern engine, faithful to the original menus, controls and
-   gameplay. Not started. Keep it in mind when reverse-engineering: document formats,
-   behaviours and addresses in `docs/analysis.md`.
+2. **A remake** in Godot 4 under `remake/` (branch `remake`). Gameplay, missions, story and
+   vehicles stay faithful to the original. Visuals are modern, MechWarrior-grade: original
+   assets serve as placeholders and scale references until new art replaces them. The plan
+   and decisions are in `remake/README.md`. Keep documenting formats, behaviours and
+   addresses in `docs/analysis.md`.
 
 ## Read first
 - `README.md` covers the user-facing summary: fixes, install steps, INI options, known issues

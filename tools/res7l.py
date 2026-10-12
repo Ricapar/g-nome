@@ -55,6 +55,13 @@ def read_entry(bin_path, ent):
         return f.read(s)
 
 
+def read_internal(d, keys, ent):
+    """Return raw bytes for an internal (type 13..22) entry; offsets are relative to key 5."""
+    _, t, v, o, s = ent
+    base = keys[5][0]
+    return d[base + o:base + o + s]
+
+
 def main():
     d, ents, keys = load(sys.argv[1])
     print("entries", len(ents))
