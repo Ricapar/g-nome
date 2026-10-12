@@ -52,14 +52,16 @@ Status: Phase 0 in progress. Nothing playable yet.
          table → JSON (`tools/export_gamedata.py`)
    - [ ] FRME animations → glTF animations
    - [ ] sprites/UI → PNG with the correct palette; waves → WAV; SMK → modern video
-2. [x] Model viewer (`remake/game/viewer`).
+2. [x] Model viewer and **mission viewer** (`remake/game/viewer/mission_viewer.tscn`):
+   places a mission's layout with the original models, world ground, backdrop sky and fog.
 3. [x] Terrain: mission 1-1 is a flat tiled plane plus a backdrop panorama plus placed
    objects (no heightfield). Other missions get checked once scripts can be read.
    Implication: the remake's terrain has to be authored new (a modern heightmap or
    landscape). The original only fixes the playable area, object layout and the flat
    collision plane.
 4. [x] **Script VM:** disassembler for all 2342 scripts (`tools/script7l.py`).
-   [ ] Name property indices and arrays; map each mission's entry script.
+   [x] Missions → main scripts → layout arrays; unit catalogue joined with the codex.
+   [ ] Name the remaining property indices; decode weapon table 1281 and the AI scripts.
 5. RENDER.R32 natives: movement and physics, AI behaviours, weapons and projectiles,
    damage, the eject/commandeer mechanic, camera and radar.
 6. A telemetry hook in `ddraw.dll` (or a separate injected DLL) that logs entity state each

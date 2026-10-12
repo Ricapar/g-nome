@@ -83,7 +83,7 @@ BUILTINS = {
     137: "AudioPause", 139: "AudioPauseMidi", 140: "SpritePause",
     141: "PauseTimers", 152: "SpriteIsPicked", 153: "Random", 158: "ReflectAngle",
     165: "timeGetTime", 166: "SpriteScroll", 190: "SpriteSetScrollPos", 191: "SetScrollBox",
-    193: "ArraySet",        # (array, i0, ..., value)
+    193: "ArraySet",        # (array, value, i0, i1, ...)
     200: "ScreenShake", 202: "Sine", 204: "SpriteGetExtraId", 205: "SpritePostMessage",
     206: "SpriteSendMessage", 207: "SpriteSetExtraId", 209: "SquareRoot", 213: "StrCmp",
     214: "StrCmpI", 215: "StrLen2", 216: "StrLen3", 221: "AudioMute2", 223: "ResGetType3",

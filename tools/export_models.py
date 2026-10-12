@@ -31,6 +31,14 @@ def matmul(a, b):
     return [sum(a[r * 4 + k] * b[k * 4 + c] for k in range(4)) for r in range(4) for c in range(4)]
 
 
+def xform(m, v):
+    """Row vector [x y z 1] * m."""
+    x, y, z = v[0], v[1], v[2]
+    return (x * m[0] + y * m[4] + z * m[8] + m[12],
+            x * m[1] + y * m[5] + z * m[9] + m[13],
+            x * m[2] + y * m[6] + z * m[10] + m[14])
+
+
 class Clump:
     def __init__(self, matrix):
         self.matrix = matrix
@@ -89,10 +97,11 @@ def build(data):
         elif op == "SetSurfaceTexture":
             surf["texture"] = basename(a[0])
         elif op == "Vertex":
-            stack[-1].verts.append((a[0], a[1], a[2], 0.0, 0.0))
+            stack[-1].verts.append(xform(ctm, a) + (0.0, 0.0))
         elif op == "VertexExt":
+            # vertices are transformed by the CTM in effect (identity right after ClumpBegin)
             uv = next((v for k, v in a[3:] if k == "uv"), (0.0, 0.0))
-            stack[-1].verts.append((a[0], a[1], a[2], uv[0], uv[1]))
+            stack[-1].verts.append(xform(ctm, a) + (uv[0], uv[1]))
         elif op == "Triangle":
             add_tri(a)
         elif op == "Quad":
@@ -184,29 +193,36 @@ class Gltf:
             f.write(self.bin)
 
 
+# Palette entries 10..185 are shared by all palettes; 186..245 change per mission (terrain
+# colours). Textures that use the high range get one PNG per world, using that world's first
+# mission palette: <name>.png = world 0, <name>__w1.png .. __w3.png.
+WORLD_PALETTES = [2487, 2493, 2499, 2505]
+WORLD_RANGE = 186
+
+
 def export_textures(bin_path, d, ents, keys, outdir):
-    o, s = keys[6]
-    pal = bitmap7l.palette_from_entries(d[o:o + s])
+    pals = [bitmap7l.palette_from_entries(res7l.read_internal(d, keys, ents[i]))
+            for i in WORLD_PALETTES]
     os.makedirs(outdir, exist_ok=True)
     have = set()
-    skipped = 0
+    world = 0
     for e in ents:
         if e[1] != 2 or e[4] == 0:
             continue
         raw = res7l.read_entry(bin_path, e)
         for off, _ in bitmap7l.texture_blocks(raw):
-            try:
-                name, r, px = bitmap7l.parse_texture_block(raw, off)
-            except NotImplementedError:
-                skipped += 1
-                continue
+            name, r, px = bitmap7l.parse_texture_block(raw, off)
             b = basename(name)
             if b in have:
                 continue
             have.add(b)
-            bitmap7l.write_png(os.path.join(outdir, os.path.splitext(b)[0] + ".png"),
-                               r["w"], r["h"], px, pal)
-    print("texture blocks skipped (LZW)", skipped)
+            stem = os.path.join(outdir, os.path.splitext(b)[0])
+            bitmap7l.write_png(stem + ".png", r["w"], r["h"], px, pals[0])
+            if max(px) >= WORLD_RANGE:
+                world += 1
+                for k in (1, 2, 3):
+                    bitmap7l.write_png(stem + "__w%d.png" % k, r["w"], r["h"], px, pals[k])
+    print("textures with per-world colours:", world)
     return have
 
 

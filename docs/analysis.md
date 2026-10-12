@@ -273,6 +273,40 @@ SetBackgroundColor. So **the palette is chosen per mission**. Worlds: 0 = desert
 Ground: per-world scripts (e.g. 2418 = desert, called from 2514) place tile objects (OPRT 2478/2480, ...) every 600 units with
 `script_2039(1, tile, x, z, 0, 0, 260)` and `SetLevel(obj, -100)`.
 
+### Missions, units and layouts (2026-10-12)
+- **Mission table = array 6984** (34 x 6): `[index, array, type16, main script, array, n]`.
+  Rows 1..22 are the campaign missions 1-1..4-6 in order. Rows 23..32 have only a main script
+  (training and multiplayer maps). Mission 1-1's main script is **8744**:
+  `script_2515(bounds…)` → setup `script_8736(1, 8743)` (sets world row via
+  `script_2513(row)`, camera/LOD) → `script_2523(1, 8743, 0)` = **spawn the layout** →
+  `script_8737` (mission start: player, objectives, …).
+- **Layout arrays** (e.g. 8743, 76 x 7): `[unit_row, runtime_id, x, z, y, heading*100, flag]`
+  in game units. `script_2523` fills column 1 with the spawned object id, so later scripts find
+  units by layout row. Row 1 of 1-1 is the player: Union infantry, on foot.
+- **Unit catalogue = array 5843** (197 x 5): `[template, init script, class, category,
+  variant]`. Categories: 141 Sentry, 142 Tactical Defense, 143 Cruiser, 144 Heavy Assault
+  HAWC, 161 hovercraft, 181/182 armoured support, 22-24 infantry, 2xx structures,
+  250 rock formations, 251-255 scenery, 500 waypoint, 550-553 nav/supply, 570 ?.
+  Rows 0-23 = Union / Darken / Merc / Scorp vehicles + infantry. They match LABTEXT.DAT
+  (`tools/export_gamedata.py` joins them). Template props[1..7] = the same model in 7 team
+  colours. `script_2039(class, template, x, z, heading, y, category)` instantiates a unit.
+- **Unit init scripts** (catalogue column 1, e.g. 2619 → 2631 for the Union Prowler) set:
+  codex stat A (`script_2056` → props 97/94/134) and stat B (`script_2057` → 95/98/135);
+  turn/accel limits (SetMaxAngularVelocity/Accel, SetMaxAccel); weapons
+  (`script_1656(obj, weapon, ammo, hardpoint)` using **weapon table array 1281**);
+  the animation state machine (`addAnimation`/`addTrigger` over FRME resources); AI/update
+  scripts (props 72/75/93/130).
+- **Scale**: game units / 100 = model units (ground tile = 6 model units = 600 game units).
+  Headings are hundredths of a degree.
+- **Palettes**: entries 10..185 are identical in all 12 mission palettes. Entries 186..245 change
+  per mission (terrain colours). So vehicle textures are palette-independent, while 104
+  terrain/scenery textures need the world palette (`export_models` writes `__w1..3` variants).
+- **Rock formations** (category 250) have no texture in the model. The spawner applies
+  `SetModelTexture(model, 2482 + world)` (type-1 128x128 bitmaps).
+- **RWX vertex rule**: vertices are transformed by the CTM in effect when they are emitted.
+  `ClumpBegin` makes the CTM the child's local transform and resets it to identity inside.
+  Rock models rely on the first rule.
+
 ## Remake-relevant (Goal 2)
 - All gameplay logic is in script bytecode (key 5) + RENDER.R32 natives (AI tasks/goals,
   movement behaviours: pursue/evade/flock/follow, collision, projectiles, damage/health).
