@@ -1,6 +1,15 @@
 # R11: UI design system and Godot UI foundation
 
-Status: **todo**
+Status: **active**
+
+## Decisions (user, 2026-10-12)
+- Keep the **original visual direction** (modernised G-Nome). No modern game UI as reference
+  besides *Star Wars: Squadrons* for inspiration.
+- **2D menus**, with an optional 3D scene inside the centre "screen".
+- **Diegetic 3D cockpits** (R17).
+- Fonts: **Saira** (variable, OFL) + **Share Tech Mono** (OFL), chosen by comparison with the
+  original's lettering.
+- Design direction, palette, typography and references: `remake/UI-DESIGN.md`.
 
 ## Goal
 A sharp, modern, resolution-independent UI kit for the remake, built from scratch the
@@ -94,15 +103,9 @@ Done when:
 - Keyboard-only and gamepad-only runs reach every gallery control (the user tests a pad).
 - The user signs off on the style frames and on the gallery's look.
 
-## Open questions (decisions for the user)
-- Visual direction: a faithful "modernised G-Nome" (keep red hazard metal, blue glass, green
-  phosphor) or a cleaner new identity? Recommendation: modernised G-Nome, so the remake still
-  reads as G-Nome.
-- Diegetic vs flat UI: should the menus sit inside a 3D scene (e.g. a hangar with the menu on
-  a console), or a 2D layered UI over an animated background? Recommendation: 2D UI over a
-  live 3D background, which is cheaper and still modern.
-- Fonts and any licensed (non-OFL) assets.
-- Base resolution 1920x1080 vs 2560x1440.
+## Open questions
+- Base resolution 1920x1080 vs 2560x1440 (working assumption: 1920x1080).
+- SVG icons: `DPITexture` exists in Godot 4.7 (checked), so use it for SVG icons.
 
 ## Dependencies
 - None blocking (design can start now). R10 provides the content inventory. R8 provides

@@ -19,9 +19,10 @@ briefing stub (or the R5 sandbox once it exists).
   button closes the open columns. The bottom strip shows a help line per hovered entry
   ("Start a New Game"). Wave 8398 loops under the menu and 8403 plays on selection. The
   centre of the screen is a big empty viewport frame (used by the Lab, briefing, and credits).
-- Decision: flow and content are faithful, the look is new (R11). The original layout is a
-  guide, not a constraint. For example, the empty centre frame could host a live 3D scene
-  (a rotating HAWC, a hangar), which suits a modern menu.
+- Decision (user, 2026-10-12): keep the original's layout and identity (pillars, centre
+  screen, status strip, push-button bar; see `remake/UI-DESIGN.md`), rebuilt sharp. Menus are 2D;
+  the centre screen may show a 3D scene (e.g. a rotating HAWC when idle). Flow and content
+  are faithful. Proportions adapt to wide screens; the arrangement stays.
 
 ## What is already known
 - Menu tree, positions, click/hover scripts and action ids: R10 (`ui_menus.json`, array 8611).

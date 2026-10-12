@@ -34,7 +34,7 @@ anywhere.
 | R8 | Remaining exporters: sprites/UI, waves, Smacker video | [R8-exporters.md](backlog/R8-exporters.md) | todo |
 | R9 | Per-world colours for scenery other than rocks in the mission viewer | [R9-scenery-palettes.md](backlog/R9-scenery-palettes.md) | todo |
 | R10 | UI: decode the original menu system (screens, buttons, actions, sprites) | [R10-menu-decode.md](backlog/R10-menu-decode.md) | todo |
-| R11 | UI: design system and Godot UI foundation (theme, components, vector + hi-res) | [R11-ui-foundation.md](backlog/R11-ui-foundation.md) | todo |
+| R11 | UI: design system and Godot UI foundation (theme, components, vector + hi-res) | [R11-ui-foundation.md](backlog/R11-ui-foundation.md) | active |
 | R12 | UI: front-end menu shell in Godot | [R12-menu-shell.md](backlog/R12-menu-shell.md) | todo |
 | R13 | UI: briefing, debriefing, campaign progression, save/load | [R13-briefing-campaign.md](backlog/R13-briefing-campaign.md) | todo |
 | R14 | UI: options, controls/rebinding, pause menu | [R14-options-pause.md](backlog/R14-options-pause.md) | todo |

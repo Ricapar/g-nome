@@ -29,9 +29,8 @@ counterpart bound to real data, and it holds up at 1920x1080, 3840x2160 and 3840
 - **Layout**: one HUD layout resource per vehicle class (from R16's `hud.json`, translated
   to anchors/safe areas, not 640x480 pixels). Elements keep their original *relative* placement
   where it matters (e.g. radar bottom centre), adjusted for wide screens.
-- **Cockpit framing**: modern options per class: helmet visor edge/vignette on foot, a 3D
-  cockpit mesh or a light canopy frame for vehicles (new art). Use R16's crops only as a
-  hint for sight lines.
+- **Cockpit framing**: a 3D cockpit scene per vehicle class (diegetic, see the decision
+  below), and a helmet visor on foot. Use R16's crops as a hint for sight lines.
 - **Effects**: damage flicker/shake (`ScreenShake` from R16), lock-on tone, low-ammo
   blinks; emissive glow via the R11 shader approach.
 - **View modes**: cockpit, chase (`AttachCamera` z = -20, height 10), zoom-out steps,
@@ -53,11 +52,20 @@ counterpart bound to real data, and it holds up at 1920x1080, 3840x2160 and 3840
 - Crisp at 4K and 12:5 (zoomed crops), readable at 1280x720.
 - Frame cost: HUD under ~0.5 ms at 4K (Godot profiler).
 
-## Open questions (decisions for the user)
-- Diegetic 3D cockpits (MechWarrior 5 style, HUD on glass and screens) vs a 2D overlay with
-  light framing? Recommendation: 2D overlay first (fast, readable), diegetic cockpit later as an
-  art upgrade with the same `HudModel`.
-- Keep the original's green phosphor HUD colour as the default scheme?
+## Decision (user, 2026-10-12): diegetic 3D cockpits
+- Instruments live on the cockpit model (screens, lamps, gauges, counters), in the spirit of
+  *Star Wars: Squadrons* (`remake/UI-DESIGN.md`). Build each instrument as a 3D mesh whose
+  display is a `SubViewport` texture or a shader driven by `HudModel`, so the same
+  components also render as an optional 2D overlay ("HUD on" setting).
+- Reticle: project onto a plane at the distance of the object behind it, scaled to a
+  constant apparent size (the Squadrons approach).
+- On foot: a helmet visor with projected elements. Vehicles: one cockpit scene per class, with
+  readouts placed on the same side as their controls.
+- Keep green phosphor as the default instrument colour.
+
+## Open questions
+- Cockpit art per vehicle class (new models): scope and order, starting with the Union HAWC
+  the player commandeers in 1-1.
 
 ## Dependencies
 - R16 (what to show), R11 (kit), R5 (sandbox with a player and a HAWC). R6 for weapons, R7 for
