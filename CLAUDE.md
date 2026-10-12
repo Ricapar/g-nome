@@ -9,6 +9,24 @@
    and decisions are in `remake/README.md`. Keep documenting formats, behaviours and
    addresses in `docs/analysis.md`.
 
+## Starting a session (how to reorient)
+**Current focus: the remake (Goal 2). The patch backlog is parked.**
+1. Check `git status` and `git log --oneline -5` on branch `remake` to see what landed last.
+2. Open `docs/REMAKE-BACKLOG.md`. Take the item the user names, or else the first `active`
+   item, or else the first `todo` item in the recommended order given in that file (currently
+   R1 → R0 → R2 → R3 → R5 → R4 → R6 → R7; R8 and R9 can go anywhere).
+3. Read that item's spec in `docs/backlog/<ID>-*.md`. It has the background, known facts with
+   file paths and addresses, the steps, how to verify, and open questions. Use
+   `remake/README.md` for the plan and decisions, and `docs/analysis.md` for format details.
+4. If something is still unclear, earlier session transcripts are in
+   `%USERPROFILE%\.claude\projects\C--Users-Ricapar-Documents-Git-g-nome-rea\*.jsonl`. They
+   are large, so grep them for keywords; don't read them whole.
+5. While working, set the item's status to `active` in both the backlog table and the spec.
+   When it's finished, set it to `done`, fold anything new into `docs/analysis.md` (including
+   the spec's "Notes to fold into analysis.md"), and update dependent specs if their
+   assumptions changed. New work found along the way becomes a new backlog item with its own
+   spec.
+
 ## Read first
 - `README.md` covers the user-facing summary: fixes, install steps, INI options, known issues
   and credits.
@@ -98,19 +116,13 @@ Path from boot to the mission 1-1 cockpit (game coordinates):
   RenderWare's 8-bit driver refuses other devices.
 - Music is CD audio via MCI `cdaudio` (`mciSendCommandA` in RTLIB: `AudioPlayCDTrack` etc.).
 
-## Open work (agreed priorities)
-1. Make the install portable: redirect `7THLEVEL.INI` (`GetPrivateProfile*`/
-   `WritePrivateProfile*`) to the game folder, and check where save games are written.
-2. One-step install script: copy from CD/ISO, apply the Smacker patch, drop in `ddraw.dll`,
-   write the INI.
-3. Guard the occasional exit crash: CRT `flsall` at RTLIB `0x1002a240` reads a freed
-   `__piob` (`0x10060ab8`). Not seen since `ddraw.dll` was added.
-4. Test `Display=2` (+`Stretch`/`Smooth`), full screen with the latest DLL, Alt-Tab,
-   save/load and later missions.
-5. CD-audio emulation (hook MCI `cdaudio` → play files) once the user has a real disc rip or
-   the soundtrack files. The user also plans to test with the original CD-ROM.
-6. Later: gamepads (winmm joystick API), DirectPlay multiplayer (TCP only), Goal 2 tooling
-   (asset extractors, script bytecode disassembler).
+## Open work
+Tracked in two backlogs (see "Starting a session" above):
+- `docs/REMAKE-BACKLOG.md` is **active**: items R0–R9, each with a spec in `docs/backlog/`.
+  Specs were written from read-only research: treat their claims as leads to verify.
+- `docs/PATCH-BACKLOG.md` is **parked**: items P1–P7 (portable INI, installer, exit crash,
+  test matrix, CD audio, gamepad, multiplayer). No specs yet. Don't work on these unless the
+  user asks.
 
 ## Git
 - Remote `origin` = github.com/Ricapar/g-nome. `main` holds the first full commit.
