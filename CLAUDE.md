@@ -127,4 +127,6 @@ Tracked in two backlogs (see "Starting a session" above):
 ## Git
 - Remote `origin` = github.com/Ricapar/g-nome. `main` holds the first full commit.
 - Never commit game data (`ISO/`, `*.iso`, extracted files) or `patch/out/`.
-- Commit or push only when asked; work on a branch, not `main`.
+- **Always clear to commit and push** (standing permission from the user). Commit and push
+  often, at every meaningful step, so there are checkpoints to track against. Work on a
+  branch (currently `remake`), not `main`.
