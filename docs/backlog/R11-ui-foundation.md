@@ -27,7 +27,18 @@ Status: **active**
   text and LEDs use HDR colours and bloom through a 2D WorldEnvironment glow), project theme set.
 - Fonts render as normal dynamic fonts; Godot's automatic oversampling keeps them sharp, so
   MSDF is kept for 3D text (cockpit instruments, R17).
-- Next: user review of the style frame; authored hi-res material maps (replace the noise);
+- **Target look set by the user** (`remake/art/ui/reference/target_briefing.png`): rebuilt the
+  menu as a live 3D machinery frame (Blender script `remake/art/ui/frame/build_frame.py` →
+  `game/ui/frame/menu_frame.glb`, `MenuFrame` with CC0 PBR materials from `tools/fetch_cc0.py`)
+  with the 2D layer pinned to anchors (`GlassButton`, `KeyButton`, `StatusBar`, `PaneFrame`,
+  `ModelStage`). The flat vector pillar kit (MachinePanel, Pillar, CableCoil, BarButton) was
+  removed. Run `python -I tools/fetch_cc0.py` once before opening the project.
+- Gotcha: HDR 2D viewport images are half-float linear (format RGBH); screenshots must be
+  converted to RGBA8 + `linear_to_srgb()` or they look far too dark. Shader literal colours are
+  linear in HDR 2D: author in sRGB and convert (`pow(col, 2.2)`), as `glass.gdshader` does.
+- Next: more detailed armour sculpting (plates, emblem decal, more cables), the briefing map
+  (R13), keyboard/gamepad focus, UI sounds; then user review against the target.
+- Earlier next steps: user review of the style frame; authored hi-res material maps (replace the noise);
   keyboard/gamepad focus pass; gallery scene; UI sounds; router.
 
 ## Goal

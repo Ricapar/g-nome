@@ -1,11 +1,12 @@
 @tool
 class_name GlassButton
 extends Button
-## A pillar slot: blue glass when empty, a green phosphor button when it holds an entry.
-## Text and states come from the theme type "GlassButton"; the face is ui/shaders/glass.gdshader.
+## A slot button in a pillar collar: smoky glass with pale text, glossy blue when empty,
+## neon green with chevron markers when selected. Text style: theme type "GlassButton".
 
 const SHADER := preload("res://ui/shaders/glass.gdshader")
 const NOISE := preload("res://ui/materials/grime_noise.tres")
+const MARK := Color(0.3, 2.4, 0.55)
 
 ## Status-line help text shown while hovered or focused.
 @export var status_text := ""
@@ -59,6 +60,19 @@ func _refresh() -> void:
 		var lit := _hover or has_focus()
 		state = (4 if lit else 3) if button_pressed else (2 if lit else 1)
 	_mat.set_shader_parameter("state", state)
+	queue_redraw()
+
+
+func _draw() -> void:
+	if not button_pressed or text == "":
+		return
+	# chevron markers pointing in from both ends
+	var h := size.y * 0.16
+	var cy := size.y * 0.5
+	for side: float in [-1.0, 1.0]:
+		var x := size.x * 0.5 + side * (size.x * 0.5 - 7.0)
+		var tip := x - side * h * 0.9
+		draw_colored_polygon(PackedVector2Array([Vector2(x, cy - h), Vector2(tip, cy), Vector2(x, cy + h)]), MARK)
 
 
 func _on_pressed() -> void:

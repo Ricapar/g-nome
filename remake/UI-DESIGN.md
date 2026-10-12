@@ -7,11 +7,37 @@ the original, captured windowed with `tools/dev/drive.ps1` into `%TEMP%\ui_ref` 
 | Topic | Decision |
 |---|---|
 | Direction | **Keep the original's visual identity**, rebuilt sharp and modern: red painted-metal machinery with hazard stripes, blue glass indicator panels, green phosphor text, light brushed-steel push-buttons. |
-| Menus | **2D UI** (Godot `Control`s) laid out like the original: a pillar on each side, a centre "screen", a status strip and a bar of push-buttons at the bottom. The centre screen can host a **3D scene** (`SubViewport`), for example the Lab turntable, the briefing target, or an idle vehicle. |
+| Menus | **2D interactive UI** (Godot `Control`s) over a **live 3D machinery frame** (see "Target look"), laid out like the original: a pillar on each side, a centre "screen", a status strip and a bar of push-buttons at the bottom. The centre screen can host a **3D scene** (`SubViewport`), for example the Lab turntable, the briefing target, or an idle vehicle. |
 | Cockpits | **Diegetic 3D**: instruments are part of each cockpit model (see R17). A 2D HUD overlay exists only as an option. |
 | Fonts | **Saira** (OFL, variable: width 50-125, weight 100-900) for all UI text, plus **Share Tech Mono** (OFL) for phosphor readouts. Both live in `game/ui/fonts/` with their licences. |
 | Technique | Vector shapes (SDF shaders, `StyleBoxFlat`, SVG via `DPITexture`, MSDF fonts) combined with high-res material textures. No original bitmaps are used as UI art. |
 | Reference | The original game first. Second: *Star Wars: Squadrons* (Motive, 2020) for its cockpit and instrument thinking. |
+
+## Target look (user, 2026-10-12)
+Reference image: `remake/art/ui/reference/target_briefing.png` (the briefing screen). "True to the
+original, but much more refined." Breakdown:
+- **Materials, not flat colours**: chipped red paint over steel with white chevron markings,
+  dark scratched steel collars and bezel, brushed-steel keys, black powder-coated recesses,
+  worn hazard stripes, rubber cables and hydraulic rams.
+- **Depth and light**: bevels with specular edges, AO in seams, layered plates angled toward
+  the screen, small orange practical lamps (between slots and keys, under the screen, in the
+  header), green light spill from the selected button.
+- **Buttons**: smoky dark glass with pale cyan text; the selected one has a neon green frame,
+  green glass and chevron markers; empty slots are glossy blue. Keys are chunky steel blocks
+  with dark faces; the selected key has a green LED, an italic label and a green outline glow.
+- **Screen**: dark teal glass; a two-tone wide title ("1-1:" white, name green); content panes
+  with thin green borders and corner ticks; objectives with yellow box bullets.
+- **Status line**: yellow ">>" chevrons and left-aligned yellow text in a recessed channel.
+
+### How it is built
+- **The machinery frame is a 3D model** (`remake/art/ui/frame/build_frame.py`, a Blender
+  script that generates bevelled hard-surface geometry → `game/ui/frame/menu_frame.glb`). Godot
+  renders it live behind the UI (`MenuFrame`) with PBR materials from CC0 texture sets
+  (ambientCG, fetched by `tools/fetch_cc0.py`, triplanar so no UVs), real lamps, SSAO and glow.
+  It renders at the window's physical resolution; wide screens see the "wing" machinery.
+- **The interactive layer is 2D**: buttons, keys, status line and screen content are Controls
+  pinned every frame to anchor empties in the model (`anchor_*`, projected through the camera).
+- Vector and shader work remains for everything flat: glass faces, glows, chevrons, panes, text.
 
 ## The original, screen by screen (what the remake must keep)
 - **Frame** (all screens): left and right pillars of red machinery. Each pillar has four slots

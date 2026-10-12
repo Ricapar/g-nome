@@ -25,5 +25,5 @@ void fragment() {
 	float edge = power * 1.1;
 	float off = smoothstep(edge - 0.02, edge, uv.y);
 	float sweep = exp(-pow((uv.y - edge) / 0.008, 2.0)) * (1.0 - step(1.0, power));
-	COLOR = vec4(vec3(0.2, 1.0, 0.45) * sweep * 2.0, max(dark * 0.85, off) + sweep);
+	COLOR = vec4(vec3(0.2, 1.0, 0.45) * sweep * 2.0, max(dark * 0.45, off) + sweep);
 }
