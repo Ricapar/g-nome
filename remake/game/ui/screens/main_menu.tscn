@@ -1,4 +1,4 @@
-[gd_scene load_steps=12 format=3]
+[gd_scene load_steps=14 format=3]
 
 [ext_resource type="Script" path="res://ui/screens/main_menu.gd" id="1_menu"]
 [ext_resource type="Script" path="res://ui/frame/menu_frame.gd" id="2_frame"]
@@ -8,6 +8,8 @@
 [ext_resource type="Script" path="res://ui/components/model_stage.gd" id="6_stage"]
 [ext_resource type="Script" path="res://ui/components/pane_frame.gd" id="7_pane"]
 [ext_resource type="Shader" path="res://ui/shaders/screen.gdshader" id="8_screen"]
+[ext_resource type="Script" path="res://ui/components/tactical_map.gd" id="9_map"]
+[ext_resource type="Script" path="res://ui/components/screen_chrome.gd" id="10_chrome"]
 
 [sub_resource type="Environment" id="glow_env"]
 background_mode = 3
@@ -128,15 +130,16 @@ anchor_right = 0.51
 anchor_bottom = 0.79
 script = ExtResource("7_pane")
 
-[node name="MapPlaceholder" type="Label" parent="Screen/BriefingPage/MapPane"]
+[node name="Map" type="Control" parent="Screen/BriefingPage/MapPane"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-theme_type_variation = &"DataValue"
-text = "TACTICAL MAP (R13)"
-horizontal_alignment = 1
-vertical_alignment = 1
+offset_left = 2.0
+offset_top = 2.0
+offset_right = -2.0
+offset_bottom = -2.0
+script = ExtResource("9_map")
 
 [node name="TargetPane" type="Control" parent="Screen/BriefingPage"]
 layout_mode = 1
@@ -177,6 +180,13 @@ tick = 0.0
 [node name="Text" type="Label" parent="Screen/BriefingPage/Objective"]
 layout_mode = 2
 text = "Head for waypoint one"
+
+[node name="Chrome" type="Control" parent="Screen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("10_chrome")
 
 [node name="ScreenOverlay" type="ColorRect" parent="Screen"]
 unique_name_in_owner = true

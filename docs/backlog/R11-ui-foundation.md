@@ -36,6 +36,15 @@ Status: **active**
 - Gotcha: HDR 2D viewport images are half-float linear (format RGBH); screenshots must be
   converted to RGBA8 + `linear_to_srgb()` or they look far too dark. Shader literal colours are
   linear in HDR 2D: author in sRGB and convert (`pow(col, 2.2)`), as `glass.gdshader` does.
+- Second pass toward the target: the core now fills 16:9 (pillars at the screen edges, wider
+  bezel/keys); sculpted armour (cut-corner layered plates, white chevrons, indicator lamps,
+  vents, rams, hoses, grille, foot plates), drum collars, a thick sloped bezel with trim, bolts
+  and clips, a header lamp housing, lamp pods and pipes under the screen, sloped steel keys.
+  `build_frame.py` bakes edge-wear/grime masks into vertex colours; `frame_material.gdshader`
+  (triplanar PBR) wears paint to bare steel on edges and darkens seams. Reflections come from
+  a CC0 studio HDRI (Poly Haven, `fetch_cc0.py`). Added `TacticalMap` (briefing terrain from the
+  mission layout: rocks as contoured ridges, waypoints, hostiles, player start) and
+  `ScreenChrome` (corner brackets, title rules).
 - Next: more detailed armour sculpting (plates, emblem decal, more cables), the briefing map
   (R13), keyboard/gamepad focus, UI sounds; then user review against the target.
 - Earlier next steps: user review of the style frame; authored hi-res material maps (replace the noise);

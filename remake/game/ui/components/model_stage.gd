@@ -92,7 +92,8 @@ func _build_hangar(r: float) -> void:
 	floor_mat.uv1_world_triplanar = true
 	floor_mat.uv1_scale = Vector3.ONE * (0.6 / r)
 	floor_mat.albedo_color = Color(0.35, 0.36, 0.38)
-	floor_mat.metallic = 0.6
+	floor_mat.metallic = 0.1
+	floor_mat.roughness = 0.85
 	for map in ["Color", "NormalGL", "Roughness"]:
 		var p := CC0 % ["Metal038", "Metal038", map]
 		if not ResourceLoader.exists(p):
@@ -130,6 +131,7 @@ func _build_hangar(r: float) -> void:
 		l.position = Vector3(x * r, r * 2.6, r * 0.4)
 		l.light_energy = 1.5
 		l.omni_range = r * 4
+		l.light_specular = 0.15
 		_viewport.add_child(l)
 
 

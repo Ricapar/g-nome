@@ -1,13 +1,16 @@
 class_name MenuFrame
 extends SubViewport
 ## The menu machinery as a lit 3D scene (remake/UI-DESIGN.md, "Target look").
-## The model comes from remake/art/ui/frame/build_frame.py; materials are CC0 PBR sets fetched
-## by tools/fetch_cc0.py (res://art_cc0, flat colours if missing). It renders at the window's
-## physical resolution so it stays sharp; the menu draws it with a TextureRect.
-## Anchors (empties named anchor_*) tell the 2D layer where its controls go.
+## The model comes from remake/art/ui/frame/build_frame.py; materials use frame_material.gdshader
+## with CC0 PBR sets and an HDRI for reflections, fetched by tools/fetch_cc0.py (res://art_cc0;
+## plain colours if missing). It renders at the window's physical resolution so it stays sharp;
+## the menu draws it with a TextureRect. Anchors (empties named anchor_*) tell the 2D layer
+## where its controls go.
 
 const FRAME := preload("res://ui/frame/menu_frame.glb")
+const SHADER := preload("res://ui/frame/frame_material.gdshader")
 const CC0 := "res://art_cc0/%s/%s_2K-JPG_%s.jpg"
+const HDRI := "res://art_cc0/hdri/studio_small_09_1k.hdr"
 const FRAME_HEIGHT := 10.8 # model units; 1 unit = 100 design px
 const FOV := 24.0
 
@@ -21,7 +24,7 @@ var _slot_lights := {}
 func _init() -> void:
 	own_world_3d = true
 	msaa_3d = Viewport.MSAA_4X
-	use_hdr_2d = false
+	screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 	render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
 
@@ -37,7 +40,7 @@ func _ready() -> void:
 			_add_lamp_light(n)
 	camera.fov = FOV
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
-	camera.position = Vector3(0, 0, 1.0 + (FRAME_HEIGHT * 0.5) / tan(deg_to_rad(FOV * 0.5)))
+	camera.position = Vector3(0, 0, 1.2 + (FRAME_HEIGHT * 0.5) / tan(deg_to_rad(FOV * 0.5)))
 	camera.far = 200.0
 	add_child(camera)
 	camera.current = true
@@ -63,7 +66,7 @@ func has_anchor(name: String) -> bool:
 func set_led(i: int, on: bool) -> void:
 	var m: StandardMaterial3D = _leds.get(i)
 	if m:
-		m.emission_energy_multiplier = 7.0 if on else 0.0
+		m.emission_energy_multiplier = 6.0 if on else 0.0
 		m.albedo_color = Color(0.2, 1.0, 0.35) if on else Color(0.02, 0.05, 0.03)
 
 
@@ -77,66 +80,84 @@ func set_slot_glow(side: String, index: int, on: bool) -> void:
 func _build_environment() -> void:
 	var env := Environment.new()
 	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color(0.01, 0.012, 0.012)
+	env.background_color = Color(0.008, 0.009, 0.01)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.32, 0.34, 0.36)
-	env.ambient_light_energy = 0.55
+	env.ambient_light_color = Color(0.3, 0.32, 0.35)
+	env.ambient_light_energy = 0.35
+	if ResourceLoader.exists(HDRI):
+		# the HDRI is only reflected by the metal; the background stays dark
+		var sky_mat := PanoramaSkyMaterial.new()
+		sky_mat.panorama = load(HDRI)
+		sky_mat.energy_multiplier = 0.55
+		var sky := Sky.new()
+		sky.sky_material = sky_mat
+		env.sky = sky
+		env.sky_rotation = Vector3(deg_to_rad(-10), deg_to_rad(200), 0)
+		env.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
+		env.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+		env.ambient_light_sky_contribution = 0.5
 	env.tonemap_mode = Environment.TONE_MAPPER_ACES
-	env.tonemap_exposure = 1.1
+	env.tonemap_exposure = 0.9
 	env.ssao_enabled = true
-	env.ssao_radius = 0.6
-	env.ssao_intensity = 2.5
+	env.ssao_radius = 0.5
+	env.ssao_intensity = 3.0
+	env.ssao_power = 1.6
+	env.ssil_enabled = true
 	env.glow_enabled = true
-	env.glow_intensity = 0.35
+	env.glow_intensity = 0.4
 	env.glow_bloom = 0.0
-	env.glow_hdr_threshold = 1.6
-	env.reflected_light_source = Environment.REFLECTION_SOURCE_DISABLED
+	env.glow_hdr_threshold = 1.4
+	env.adjustment_enabled = true
+	env.adjustment_contrast = 1.15
+	env.adjustment_saturation = 0.95
 	var we := WorldEnvironment.new()
 	we.environment = env
 	add_child(we)
-	# key light from the upper left front, a cool fill from the right, a rim from above
+	# key light from the upper left front, a cool fill from the right, a top light for rims
 	var key := DirectionalLight3D.new()
-	key.rotation_degrees = Vector3(-38, -32, 0)
-	key.light_energy = 1.6
-	key.light_color = Color(1.0, 0.95, 0.9)
+	key.rotation_degrees = Vector3(-35, -28, 0)
+	key.light_energy = 1.5
+	key.light_color = Color(1.0, 0.94, 0.86)
 	key.shadow_enabled = true
-	key.shadow_blur = 2.0
+	key.shadow_blur = 1.5
+	key.directional_shadow_max_distance = 60.0
 	add_child(key)
 	var fill := DirectionalLight3D.new()
-	fill.rotation_degrees = Vector3(-10, 35, 0)
-	fill.light_energy = 0.45
-	fill.light_color = Color(0.7, 0.85, 1.0)
+	fill.rotation_degrees = Vector3(-15, 40, 0)
+	fill.light_energy = 0.4
+	fill.light_color = Color(0.65, 0.8, 1.0)
 	add_child(fill)
 	var top := DirectionalLight3D.new()
-	top.rotation_degrees = Vector3(-75, 0, 0)
-	top.light_energy = 0.5
+	top.rotation_degrees = Vector3(-80, 10, 0)
+	top.light_energy = 0.7
 	add_child(top)
-	# the screen glows faintly onto the bezel lip
+	# the screen glows faintly onto the bezel slope
 	var screen := OmniLight3D.new()
-	screen.position = Vector3(0, 1.3, 2.0)
-	screen.light_color = Color(0.3, 0.9, 0.7)
-	screen.light_energy = 0.5
-	screen.omni_range = 7.0
-	screen.light_specular = 0.0
+	screen.position = Vector3(0, 1.3, 1.0)
+	screen.light_color = Color(0.3, 0.9, 0.75)
+	screen.light_energy = 0.8
+	screen.light_specular = 0.2
+	screen.omni_range = 8.0
 	add_child(screen)
 
 
 func _add_lamp_light(n: Node3D) -> void:
 	var l := OmniLight3D.new()
-	l.position = n.global_position if n.is_inside_tree() else n.position
-	var red := String(n.name).begins_with("light_header") and absf(n.position.x) > 2.0
-	l.light_color = Color(1.0, 0.25, 0.1) if red else Color(1.0, 0.55, 0.15)
-	l.light_energy = 0.9
-	l.omni_range = 1.2
-	l.omni_attenuation = 1.6
+	l.position = n.global_position
+	var red := String(n.name).begins_with("light_header") and absf(n.global_position.x) > 2.0
+	l.light_color = Color(1.0, 0.25, 0.1) if red else Color(1.0, 0.55, 0.18)
+	l.light_energy = 0.8
+	l.light_specular = 0.6
+	l.omni_range = 1.3
+	l.omni_attenuation = 1.8
 	add_child(l)
 	if String(n.name).begins_with("light_slot_"):
-		# a green spill light above each slot lamp, shown while that slot is selected
+		# green spill above each slot lamp, shown while that slot is selected
 		var g := OmniLight3D.new()
-		g.position = l.position + Vector3(0, 0.46, 0.3)
+		g.position = l.position + Vector3(0, 0.45, 0.25)
 		g.light_color = Color(0.3, 1.0, 0.45)
-		g.light_energy = 2.0
-		g.omni_range = 1.6
+		g.light_energy = 2.2
+		g.omni_range = 1.7
 		g.visible = false
 		add_child(g)
 		_slot_lights[String(n.name).trim_prefix("light_slot_")] = g
@@ -146,72 +167,76 @@ func _apply_materials(root: Node) -> void:
 	for mi: MeshInstance3D in root.find_children("*", "MeshInstance3D", true, false):
 		for s in mi.mesh.get_surface_count():
 			var src := mi.mesh.surface_get_material(s)
-			var name := src.resource_name if src else ""
-			mi.set_surface_override_material(s, _material(name))
+			mi.set_surface_override_material(s, _material(src.resource_name if src else ""))
 
 
 func _material(name: String) -> Material:
 	if _materials.has(name):
 		return _materials[name]
-	var m := StandardMaterial3D.new()
+	var m: Material
 	match name:
 		"red_paint":
-			_pbr(m, "PaintedMetal004", 0.28, Color(0.36, 0.12, 0.11))
+			m = _layered("PaintedMetal004", 0.32, Color(0.3, 0.075, 0.065), "Metal009", Color(0.75, 0.75, 0.78))
 		"white_paint":
-			_pbr(m, "PaintedMetal004", 0.28, Color(1, 1, 1), false)
-			m.albedo_color = Color(0.82, 0.82, 0.80)
+			m = _layered("PaintedMetal004", 0.32, Color(0.45, 0.45, 0.44), "Metal009", Color(0.75, 0.75, 0.78), false)
+			m.set_shader_parameter("base_metallic", 0.0)
 		"steel_dark":
-			_pbr(m, "Metal038", 0.3, Color(0.55, 0.56, 0.58))
+			m = _layered("Metal038", 0.45, Color(0.3, 0.31, 0.33), "Metal009", Color(0.9, 0.9, 0.92))
 		"steel_brushed":
-			_pbr(m, "Metal009", 0.35, Color(0.9, 0.9, 0.92))
+			m = _layered("Metal009", 0.45, Color(0.5, 0.51, 0.53), "Metal009", Color(0.95, 0.95, 0.95))
 		"black_coat":
-			_pbr(m, "Metal027", 0.3, Color(0.6, 0.6, 0.6))
+			m = _layered("Metal027", 0.5, Color(0.4, 0.4, 0.42), "Metal038", Color(0.7, 0.7, 0.7))
 		"hazard":
-			_pbr(m, "PaintedMetal016", 0.5, Color(1, 1, 1))
+			m = _layered("PaintedMetal016", 0.9, Color(1, 1, 1), "Metal038", Color(0.9, 0.9, 0.9))
 		"rubber":
-			_pbr(m, "Rubber004", 0.6, Color(0.5, 0.5, 0.5))
+			m = _layered("Rubber004", 0.9, Color(0.4, 0.4, 0.42), "Rubber004", Color(0.4, 0.4, 0.42))
+			m.set_shader_parameter("wear_amount", 0.0)
 		"glass_dark":
-			m.albedo_color = Color(0.01, 0.03, 0.032)
-			m.roughness = 0.35
-			m.metallic_specular = 0.8
-		"lamp_orange", "lamp_red":
-			m.albedo_color = Color(1.0, 0.5, 0.1) if name == "lamp_orange" else Color(1.0, 0.15, 0.08)
-			m.emission_enabled = true
-			m.emission = m.albedo_color
-			m.emission_energy_multiplier = 1.6
+			var g := StandardMaterial3D.new()
+			g.albedo_color = Color(0.01, 0.03, 0.033)
+			g.roughness = 0.25
+			g.metallic_specular = 0.7
+			m = g
+		"lamp_orange", "lamp_red", "lamp_yellow":
+			var e := StandardMaterial3D.new()
+			e.albedo_color = {"lamp_orange": Color(1.0, 0.5, 0.12), "lamp_red": Color(1.0, 0.15, 0.08),
+				"lamp_yellow": Color(1.0, 0.8, 0.2)}[name]
+			e.emission_enabled = true
+			e.emission = e.albedo_color
+			e.emission_energy_multiplier = 2.2
+			m = e
 		_:
+			var e := StandardMaterial3D.new()
 			if name.begins_with("led_"):
-				m.emission_enabled = true
-				m.emission = Color(0.25, 1.0, 0.4)
-				m.emission_energy_multiplier = 0.0
-				m.albedo_color = Color(0.02, 0.05, 0.03)
-				_leds[int(name.trim_prefix("led_"))] = m
+				e.emission_enabled = true
+				e.emission = Color(0.25, 1.0, 0.4)
+				e.emission_energy_multiplier = 0.0
+				e.albedo_color = Color(0.02, 0.05, 0.03)
+				_leds[int(name.trim_prefix("led_"))] = e
+			m = e
 	_materials[name] = m
 	return m
 
 
-## Fill a material from a CC0 set with world-triplanar mapping (no UVs needed).
-func _pbr(m: StandardMaterial3D, set_id: String, scale: float, tint: Color, use_albedo := true) -> void:
-	m.uv1_triplanar = true
-	m.uv1_world_triplanar = true
-	m.uv1_scale = Vector3.ONE * scale
-	m.uv1_triplanar_sharpness = 4.0
-	m.albedo_color = tint
-	var tex := func(map: String) -> Texture2D:
-		var p := CC0 % [set_id, set_id, map]
-		return load(p) if ResourceLoader.exists(p) else null
-	if use_albedo:
-		m.albedo_texture = tex.call("Color")
-	var n: Texture2D = tex.call("NormalGL")
-	if n:
-		m.normal_enabled = true
-		m.normal_texture = n
-		m.normal_scale = 1.0
-	m.roughness_texture = tex.call("Roughness")
-	m.roughness = 1.0
-	var metal: Texture2D = tex.call("Metalness")
-	if metal:
-		m.metallic_texture = metal
-		m.metallic = 1.0
-	else:
-		m.metallic = 0.0
+func _tex(set_id: String, map: String) -> Texture2D:
+	var p := CC0 % [set_id, set_id, map]
+	return load(p) if ResourceLoader.exists(p) else null
+
+
+## Frame material: base layer `base` (tinted) wearing through to `wear` on convex edges.
+func _layered(base: String, scale: float, tint: Color, wear: String, wear_tint: Color, use_albedo := true) -> ShaderMaterial:
+	var m := ShaderMaterial.new()
+	m.shader = SHADER
+	m.set_shader_parameter("scale", scale)
+	m.set_shader_parameter("base_tint", tint)
+	m.set_shader_parameter("use_base_albedo", use_albedo)
+	m.set_shader_parameter("base_albedo", _tex(base, "Color"))
+	m.set_shader_parameter("base_normal", _tex(base, "NormalGL"))
+	m.set_shader_parameter("base_rough", _tex(base, "Roughness"))
+	var metal := _tex(base, "Metalness")
+	m.set_shader_parameter("base_metal", metal)
+	m.set_shader_parameter("base_metallic", 1.0 if metal else 0.0)
+	m.set_shader_parameter("wear_albedo", _tex(wear, "Color"))
+	m.set_shader_parameter("wear_rough", _tex(wear, "Roughness"))
+	m.set_shader_parameter("wear_tint", wear_tint)
+	return m
