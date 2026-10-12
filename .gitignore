@@ -1,3 +1,14 @@
 ISO/
 *.iso
 patch/out/
+# local game install for testing (copyrighted game data)
+test-install/
+# dev tool build outputs and logs
+tools/dev/*.exe
+tools/dev/*.dll
+tools/dev/*.obj
+tools/dev/*.lib
+tools/dev/*.exp
+tools/dev/*.log
+tools/dev/*.png
+__pycache__/

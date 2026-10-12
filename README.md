@@ -149,6 +149,8 @@ Steps:
 | `tools/patch_gnome.py` | Verified byte patch for `SMACKW32.DLL` |
 | `tools/res7l.py` | Reader for the "7L" resource archive (`G-NOME.BIN` + `G-NOME.0xx`) |
 | `tools/peinfo.py`, `tools/strs.py` | Small PE-inspection and string-dump helpers |
+| `tools/dev/` | Development aids: windowed test automation (`drive.ps1`), a GDI call tracer DLL, DLL injector, memory peeker, stack sampler |
+| `CLAUDE.md` | Context file for continuing this work with Claude Code |
 | `docs/analysis.md` | Reverse-engineering notes: architecture, formats, every fix |
 
 ## Credits
@@ -178,9 +180,9 @@ This work was done in a few sessions with AI assistance, directed and tested by 
   [Capstone](https://www.capstone-engine.org/) for PE inspection and disassembly, Microsoft
   Visual C++ Build Tools for the 32-bit DLLs, and PowerShell/Win32 scripts for launching,
   screenshots and input automation.
-- Throwaway diagnostic tools that aren't in this repo: an import-table tracer DLL, a DLL
-  injector and a memory peeker. They traced GDI calls, palette state and RenderWare activity
-  in the running game.
+- Purpose-built diagnostic tools (now in `tools/dev/`): an import-table tracer DLL, a DLL
+  injector, a memory peeker and a stack sampler. They traced GDI calls, palette state and
+  RenderWare activity in the running game.
 
 The human side covered goals, judgment calls and everything that needed eyes and ears on real
 hardware. More than once, a photo of the monitor settled a question no tool could answer.
