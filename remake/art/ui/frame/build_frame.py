@@ -7,7 +7,7 @@ spans a 16:9 view: x -9.6..9.6, z -5.4..5.4 (1 unit = 100 design px at 1080p); m
 x = +-9.6 is only seen on wider screens. Front faces point to -Y (glTF +Z, toward the camera).
 
 Godot assigns the real materials by name (ui/frame/menu_frame.gd):
-  red_paint, white_paint, steel_dark, steel_brushed, black_coat, hazard, rubber,
+  red_paint, white_paint, steel_dark, steel_brushed, steel_face, black_coat, hazard, rubber,
   glass_dark, lamp_orange, lamp_red, lamp_yellow, led_0..led_4.
 Vertex colours carry masks for the material shader: R = edge wear (convex edges),
 G = grime (concave corners).
@@ -25,7 +25,7 @@ OUT = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else "menu_frame.gl
 
 COLOURS = {
     "red_paint": (0.45, 0.05, 0.04), "white_paint": (0.8, 0.8, 0.78), "steel_dark": (0.12, 0.12, 0.12),
-    "steel_brushed": (0.55, 0.55, 0.55), "black_coat": (0.02, 0.02, 0.02), "hazard": (0.6, 0.45, 0.05),
+    "steel_brushed": (0.55, 0.55, 0.55), "steel_face": (0.6, 0.6, 0.6), "black_coat": (0.02, 0.02, 0.02), "hazard": (0.6, 0.45, 0.05),
     "rubber": (0.03, 0.03, 0.03), "glass_dark": (0.0, 0.02, 0.02), "lamp_orange": (1.0, 0.45, 0.05),
     "lamp_red": (1.0, 0.1, 0.05), "lamp_yellow": (1.0, 0.8, 0.1), "rubber_red": (0.3, 0.03, 0.02),
 }
@@ -259,7 +259,7 @@ def build_pillar(s):
     cx = X(PW / 2)
     cylinder("collar_cap_top_" + tag, 1.2, 0.14, "steel_brushed", (cx, 0.0, 2.27))
     for i, z in enumerate(SLOT_Z):
-        cylinder("drum_%s%d" % (tag, i), 1.1, 0.8, "steel_dark", (cx, 0.0, z), bevel=0.06)
+        cylinder("drum_%s%d" % (tag, i), 1.1, 0.8, "steel_brushed", (cx, 0.0, z), bevel=0.06)
         ring("drum_bezel_%s%d" % (tag, i), oct_(2.0, 0.8, 0.12, cx, z), oct_(SLOT_W + 0.06, SLOT_H + 0.06, 0.08, cx, z),
              0.25, "steel_dark", -1.2, slope=0.06, bevel=0.03)
         prism("drum_back_%s%d" % (tag, i), oct_(SLOT_W + 0.1, SLOT_H + 0.1, 0.08, cx, z), 0.1, "black_coat", -1.05, bevel=0.0)
@@ -340,7 +340,7 @@ def build_keys():
                 "steel_brushed", bevel=0.07)
         zc = KEY_CZ - 0.1
         yc = -1.18 + 0.14 * ((zc - (-5.24)) / 1.16) - 0.015
-        prism("key_plate_%d" % i, oct_(KEY_W - 0.36, 0.6, 0.08, x, zc), 0.04, "steel_dark", yc, (x, zc), (-tilt, 0, 0), bevel=0.012)
+        prism("key_plate_%d" % i, oct_(KEY_W - 0.36, 0.6, 0.08, x, zc), 0.025, "steel_face", yc, (x, zc), (-tilt, 0, 0), bevel=0.012)
         prism("key_led_%d" % i, oct_(0.5, 0.075, 0.03, x, KEY_CZ + 0.38), 0.03, "led_%d" % i, -1.08, bevel=0.0)
         anchor("key_%d" % i, x, zc, KEY_W - 0.36, 0.6, yc - 0.02)
     for x in (-6.55, -3.9, -1.3, 1.3, 3.9, 6.55):

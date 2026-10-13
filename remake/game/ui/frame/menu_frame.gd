@@ -225,6 +225,9 @@ func _material(name: String) -> Material:
 			m = _layered("Metal038", 0.45, Color(0.3, 0.31, 0.33), "Metal009", Color(0.9, 0.9, 0.92))
 		"steel_brushed":
 			m = _layered("Metal009", 0.45, Color(0.5, 0.51, 0.53), "Metal009", Color(0.95, 0.95, 0.95))
+		"steel_face": # key faces: bright brushed steel, labels engraved on top
+			m = _layered("Metal009", 0.6, Color(0.66, 0.67, 0.69), "Metal009", Color(0.95, 0.95, 0.95))
+			m.set_shader_parameter("grime_amount", 0.5)
 		"black_coat":
 			m = _layered("Metal027", 0.5, Color(0.4, 0.4, 0.42), "Metal038", Color(0.7, 0.7, 0.7))
 		"hazard":
