@@ -49,6 +49,7 @@ func _ready() -> void:
 	# HDR 2D lets phosphor text and lamps bloom; per viewport so the 3D viewers are unaffected.
 	get_viewport().use_hdr_2d = true
 	add_child(_sounds)
+	_sounds.play(&"ambience") # original menu loop (silent without the import)
 	_frame_view.texture = _frame.get_texture()
 	var key_group := ButtonGroup.new()
 	for i in _keys.size():
@@ -144,13 +145,13 @@ func _is_nav(e: InputEvent) -> bool:
 func _back() -> void:
 	# typed arrays reject lookups of other types, so check the class first
 	var f := get_viewport().gui_get_focus_owner() as GlassButton
+	# the original has no back sound: stepping back re-selects, so it plays that selection's sound
 	if f and _right.has(f) and _left_index >= 0:
 		_left[_left_index].grab_focus()
+		_sounds.play(&"slot")
 	elif f and _key_index >= 0:
 		_keys[_key_index].grab_focus()
-	else:
-		return
-	_sounds.play(&"back")
+		_sounds.play(&"key")
 
 
 func _on_key(i: int) -> void:
