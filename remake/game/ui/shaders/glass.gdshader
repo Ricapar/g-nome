@@ -34,7 +34,7 @@ void fragment() {
 		float streak = texture(noise, vec2(p.x / 800.0, p.y / 4.0)).r;
 		col = mix(vec3(0.05, 0.08, 0.42), vec3(0.16, 0.24, 0.72), clamp(1.0 - t + streak * 0.25, 0.0, 1.0));
 	} else if (state >= 3) {
-		col = mix(vec3(0.01, 0.12, 0.05), vec3(0.03, 0.30, 0.12), clamp(1.0 - t * 1.1, 0.0, 1.0));
+		col = mix(vec3(0.015, 0.05, 0.035), vec3(0.03, 0.12, 0.07), clamp(1.0 - t * 1.1, 0.0, 1.0));
 	} else {
 		col = mix(vec3(0.020, 0.035, 0.040), vec3(0.055, 0.085, 0.090), clamp(1.0 - t, 0.0, 1.0));
 		col *= 0.9 + 0.2 * grain;
@@ -45,7 +45,7 @@ void fragment() {
 	if (state == 2) col += vec3(0.10, 0.45, 0.40) * edge;
 	if (state >= 3) {
 		float band = smoothstep(-4.0, -2.6, d) * (1.0 - smoothstep(-1.2, 0.0, d));
-		col += vec3(0.25, 2.4, 0.55) * band * (state == 4 ? 1.25 : 1.0);
+		col += vec3(0.18, 0.62, 0.3) * band * (state == 4 ? 1.15 : 1.0);
 		col += vec3(0.05, 0.6, 0.2) * exp(-max(-d - 3.0, 0.0) / 9.0);
 	}
 	// gloss: a soft upper band and a thin highlight line

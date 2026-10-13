@@ -3,7 +3,7 @@ class_name StatusBar
 extends Control
 ## The help line under the screen: a yellow double chevron and left-aligned yellow text.
 
-const YELLOW := Color(1.5, 1.2, 0.15)
+const YELLOW := Color(1.0, 0.82, 0.15)
 
 var text := "":
 	set(v):

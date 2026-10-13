@@ -45,8 +45,21 @@ Status: **active**
   a CC0 studio HDRI (Poly Haven, `fetch_cc0.py`). Added `TacticalMap` (briefing terrain from the
   mission layout: rocks as contoured ridges, waypoints, hostiles, player start) and
   `ScreenChrome` (corner brackets, title rules).
-- Next: more detailed armour sculpting (plates, emblem decal, more cables), the briefing map
-  (R13), keyboard/gamepad focus, UI sounds; then user review against the target.
+- Third/fourth pass: curved armour, emblem decal, stencils, cabling; painted-survey briefing map
+  (invented fbm terrain + ridges on the mission rocks, clouds; placeholder until R13 finds the
+  real map); deep hangar bay in `ModelStage`; model textures sampled as RW frames (frame 0 =
+  normal paint, see analysis.md); brushed-steel keys with engraved labels; polished collars.
+- User feedback (2026-10-13): green glow was far too strong on buttons and text. Toned down:
+  green/yellow UI colours now stay at or below 1.0 (no HDR overdrive), 2D glow intensity 0.18
+  with threshold 1.2, softer slot/key outlines, dimmer LEDs and slot spill lights. Keep new
+  UI colours in that range; only lamps and LEDs may bloom.
+- Interaction: keyboard/gamepad navigation in `main_menu.gd` (explicit focus neighbours; keys
+  row, columns top to bottom, accept moves into the next column, ui_cancel steps back; focus
+  shown only while keys/pad are in use), 3D key press travel (`MenuFrame.press_key`), UI
+  sounds (`UiSounds`, synthesized by `remake/art/ui/sounds/make_sounds.py`, placeholders
+  until R8). Verified by a scripted key run; not yet tried with a real pad.
+- Next: user review live in Godot (feel, sounds, pad); gallery scene; router/actions (R12);
+  armour detail (panel lines, recesses) if still wanted.
 - Earlier next steps: user review of the style frame; authored hi-res material maps (replace the noise);
   keyboard/gamepad focus pass; gallery scene; UI sounds; router.
 

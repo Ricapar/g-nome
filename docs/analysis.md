@@ -128,7 +128,10 @@ stacks of 128x128 frames (RenderWare 2.0 texture frames): model UVs address one 
 wrap inside it (V runs past 1.0 on some parts). Sampling `(u, (fract(v) + frame) / frames)`
 with frame 0 gives the red/grey Union Prowler (2583) that the original 1-1 briefing shows;
 using V as-is gives green legs. Implemented in `remake/game/viewer/rw_frame.gdshader` +
-`rw_model.gd` (used by the menu's ModelStage). Unverified: how RENDER picks the frame (team?). RENDER keeps a
+`rw_model.gd` (used by the menu's ModelStage). Per the user (who knows the original): the
+frames are display states, not team colours. The green frame is the cockpit HUD hologram of
+the vehicle, and parts turn orange then red as they take damage (likely further frames in
+taller textures). Unverified: which frame index is which state, and how RENDER switches them. RENDER keeps a
 500-entry texture table keyed by basename (`FUN_100039cf`; lookup `FUN_10003fcb`).
 Pixel index i uses palette entry i-10 of a 236-entry palette (indices 0..9 = system colours).
 

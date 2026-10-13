@@ -8,8 +8,8 @@ extends Control
 const DATA := "res://_import/data/"
 const SHADER := preload("res://ui/shaders/tactical_map.gdshader")
 const NOISE := preload("res://ui/materials/grime_noise.tres")
-const GREEN := Color(0.3, 1.8, 0.45)
-const YELLOW := Color(1.5, 1.15, 0.1)
+const GREEN := Color(0.35, 1.0, 0.5)
+const YELLOW := Color(1.0, 0.82, 0.12)
 const ROCKS := [250, 252, 253]
 const MASK_SIZE := 384
 

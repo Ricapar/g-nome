@@ -6,7 +6,7 @@ extends Button
 
 const SHADER := preload("res://ui/shaders/glass.gdshader")
 const NOISE := preload("res://ui/materials/grime_noise.tres")
-const MARK := Color(0.3, 2.4, 0.55)
+const MARK := Color(0.3, 0.95, 0.45)
 
 ## Status-line help text shown while hovered or focused.
 @export var status_text := ""

@@ -39,11 +39,14 @@ const MENU := [
 var _key_index := -1
 var _left_index := -1
 var _status_base := ""
+var _sounds := UiSounds.new()
+var _pad := false # last input came from keyboard/gamepad: focus follows selections
 
 
 func _ready() -> void:
 	# HDR 2D lets phosphor text and lamps bloom; per viewport so the 3D viewers are unaffected.
 	get_viewport().use_hdr_2d = true
+	add_child(_sounds)
 	_frame_view.texture = _frame.get_texture()
 	var key_group := ButtonGroup.new()
 	for i in _keys.size():
@@ -51,7 +54,7 @@ func _ready() -> void:
 		k.text = MENU[i][0]
 		k.status_text = MENU[i][1]
 		k.button_group = key_group
-		k.pressed.connect(_select_key.bind(i))
+		k.pressed.connect(_on_key.bind(i))
 		_hook_status(k)
 	for column in [_left, _right]:
 		var g := ButtonGroup.new()
@@ -60,8 +63,9 @@ func _ready() -> void:
 			b.set_entry("")
 			_hook_status(b)
 	for i in 4:
-		_left[i].pressed.connect(_select_left.bind(i))
-		_right[i].pressed.connect(_select_right.bind(i))
+		_left[i].pressed.connect(_on_slot.bind(_select_left, i))
+		_right[i].pressed.connect(_on_slot.bind(_select_right, i))
+	_wire_focus()
 	_overlay.resized.connect(func(): _overlay.material.set_shader_parameter("size", _overlay.size))
 	_show_page(_idle_page)
 	_set_status("")
@@ -97,9 +101,115 @@ func _place(c: Control, anchor: String, k: Vector2) -> void:
 
 
 func _hook_status(b: Control) -> void:
-	b.mouse_entered.connect(func(): _hover_status(b.status_text))
-	b.focus_entered.connect(func(): _hover_status(b.status_text))
+	b.mouse_entered.connect(func(): _hover_status(b.status_text); _sounds.play(&"hover"))
+	b.focus_entered.connect(func(): _hover_status(b.status_text); if _pad: _sounds.play(&"hover"))
 	b.mouse_exited.connect(_hover_status.bind(""))
+
+
+## Keyboard / gamepad (ui_* actions): arrows or d-pad move between keys and slot columns,
+## accept presses, cancel steps back right column -> left column -> keys. Focus is only shown
+## while that input is in use; the mouse hides it again.
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton or (event is InputEventMouseMotion and event.relative.length() > 2.0):
+		if _pad:
+			_pad = false
+			var f := get_viewport().gui_get_focus_owner()
+			if f:
+				f.release_focus()
+		return
+	if not (event is InputEventKey or event is InputEventJoypadButton or event is InputEventJoypadMotion):
+		return
+	if not event.is_pressed():
+		return
+	_pad = true
+	if get_viewport().gui_get_focus_owner() == null and _is_nav(event):
+		# first key press: land on the current selection instead of moving
+		(_keys[_key_index] if _key_index >= 0 else _keys[0]).grab_focus()
+		get_viewport().set_input_as_handled()
+	elif event.is_action("ui_cancel"):
+		_back()
+		get_viewport().set_input_as_handled()
+
+
+func _is_nav(e: InputEvent) -> bool:
+	for a in ["ui_left", "ui_right", "ui_up", "ui_down", "ui_accept", "ui_focus_next", "ui_focus_prev"]:
+		if e.is_action(a):
+			return true
+	return false
+
+
+func _back() -> void:
+	var f := get_viewport().gui_get_focus_owner()
+	if f in _right and _left_index >= 0:
+		_left[_left_index].grab_focus()
+	elif (f in _right or f in _left) and _key_index >= 0:
+		_keys[_key_index].grab_focus()
+	else:
+		return
+	_sounds.play(&"back")
+
+
+func _on_key(i: int) -> void:
+	_sounds.play(&"key")
+	_frame.press_key(i)
+	_select_key(i)
+	if _pad:
+		_focus_first(_left)
+
+
+func _on_slot(select: Callable, i: int) -> void:
+	_sounds.play(&"slot")
+	select.call(i)
+	if _pad and select == _select_left:
+		_focus_first(_right)
+
+
+func _focus_first(column: Array[GlassButton]) -> void:
+	for b in column:
+		if not b.disabled:
+			b.grab_focus()
+			return
+
+
+## Explicit neighbours, so navigation follows the machine's layout rather than screen geometry:
+## keys in a row; each column top to bottom, falling through to the selected key at the bottom.
+func _wire_focus() -> void:
+	var key_target: Button = _keys[_key_index] if _key_index >= 0 else _keys[0]
+	for i in _keys.size():
+		var k := _keys[i]
+		k.focus_neighbor_left = k.get_path_to(_keys[maxi(i - 1, 0)])
+		k.focus_neighbor_right = k.get_path_to(_keys[mini(i + 1, _keys.size() - 1)])
+		var up := _first_enabled(_left, _left_index)
+		k.focus_neighbor_top = k.get_path_to(up if up else k)
+		k.focus_neighbor_bottom = k.get_path_to(k)
+	for col in [_left, _right]:
+		var other: Array[GlassButton] = _right if col == _left else _left
+		var other_sel := _left_index if col == _right else -1
+		var enabled: Array[GlassButton] = []
+		for b: GlassButton in col:
+			if not b.disabled:
+				enabled.append(b)
+		for j in enabled.size():
+			var b := enabled[j]
+			b.focus_neighbor_top = b.get_path_to(enabled[maxi(j - 1, 0)])
+			b.focus_neighbor_bottom = b.get_path_to(enabled[j + 1] if j + 1 < enabled.size() else key_target)
+			var side := _first_enabled(other, other_sel)
+			var to_side: NodePath = b.get_path_to(side if side else b)
+			if col == _left:
+				b.focus_neighbor_right = to_side
+				b.focus_neighbor_left = b.get_path_to(b)
+			else:
+				b.focus_neighbor_left = to_side
+				b.focus_neighbor_right = b.get_path_to(b)
+
+
+func _first_enabled(column: Array[GlassButton], prefer: int) -> GlassButton:
+	if prefer >= 0 and not column[prefer].disabled:
+		return column[prefer]
+	for b in column:
+		if not b.disabled:
+			return b
+	return null
 
 
 func _select_key(i: int) -> void:
@@ -113,6 +223,7 @@ func _select_key(i: int) -> void:
 	_status_base = MENU[i][1]
 	_set_status(_status_base)
 	_show_page(_idle_page)
+	_wire_focus()
 
 
 func _select_left(j: int) -> void:
@@ -123,6 +234,7 @@ func _select_left(j: int) -> void:
 	_set_status(_status_base)
 	_fill(_right, item[2] if item.size() > 2 else [])
 	_glow("L", j)
+	_wire_focus()
 
 
 func _select_right(k: int) -> void:

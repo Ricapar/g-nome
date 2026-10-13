@@ -3,7 +3,7 @@ class_name PaneFrame
 extends Control
 ## A content pane on the screen: thin phosphor border with brighter corner ticks.
 
-@export var color := Color(0.2, 1.4, 0.35):
+@export var color := Color(0.25, 0.85, 0.4):
 	set(v): color = v; queue_redraw()
 @export var tick := 14.0:
 	set(v): tick = v; queue_redraw()

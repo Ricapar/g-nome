@@ -61,7 +61,8 @@ matching analysis.md sections ("Script VM", "Data tables", "Missions, units and 
 - Model textures taller than 128 px are stacks of 128x128 frames (found during R11): the
   menu's ModelStage samples frame 0 via `viewer/rw_model.gd`. The model and mission viewers
   still use the raw glTF materials (green legs on the Prowler); switch them over, and find
-  how RENDER.R32 picks the frame (team colour?).
+  how RENDER.R32 picks the frame. Frames are display states (user): normal paint, orange/red
+  damage, and the green cockpit HUD hologram (matters for R17 HUD and damage feedback).
 
 ## Plan
 1. Check bug 1 in the model viewer (`godot --path remake/game -- --shots <dir> <ids>`), then

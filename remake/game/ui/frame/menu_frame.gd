@@ -16,12 +16,16 @@ const SAIRA := preload("res://ui/fonts/Saira-VF.ttf")
 const STENCILS := {"text_L": "UIA-07", "text_R": "BAY 3"}
 const FRAME_HEIGHT := 11.3 # model units (1 = 100 design px); a margin so the pillars nearer the camera fit
 const FOV := 24.0
+const KEY_TRAVEL := Vector3(0, -0.015, -0.09) # into the bar, a little down the slope
+
+static var _KEY_PART := RegEx.create_from_string("^(?:key_(?:body|plate|led)|anchor_key)_([0-9])$")
 
 var camera := Camera3D.new()
 var _anchors := {}
 var _leds := {}
 var _materials := {}
 var _slot_lights := {}
+var _key_parts := {} # key index -> [[node, rest position], ...]: travels when pressed
 
 
 func _init() -> void:
@@ -45,6 +49,12 @@ func _ready() -> void:
 			_add_decal(n)
 		elif STENCILS.has(String(n.name)):
 			_add_stencil(n, STENCILS[String(n.name)])
+		var m := _KEY_PART.search(String(n.name))
+		if m:
+			var i := int(m.get_string(1))
+			if not _key_parts.has(i):
+				_key_parts[i] = []
+			_key_parts[i].append([n, n.position])
 	camera.fov = FOV
 	camera.keep_aspect = Camera3D.KEEP_HEIGHT
 	camera.position = Vector3(0, 0, 1.2 + (FRAME_HEIGHT * 0.5) / tan(deg_to_rad(FOV * 0.5)))
@@ -73,8 +83,17 @@ func has_anchor(name: String) -> bool:
 func set_led(i: int, on: bool) -> void:
 	var m: StandardMaterial3D = _leds.get(i)
 	if m:
-		m.emission_energy_multiplier = 6.0 if on else 0.0
+		m.emission_energy_multiplier = 2.5 if on else 0.0
 		m.albedo_color = Color(0.2, 1.0, 0.35) if on else Color(0.02, 0.05, 0.03)
+
+
+## Push key i in and let it spring back (its label anchor travels with it).
+func press_key(i: int) -> void:
+	for part: Array in _key_parts.get(i, []):
+		var n: Node3D = part[0]
+		var tw := n.create_tween()
+		tw.tween_property(n, "position", part[1] + KEY_TRAVEL, 0.05).set_ease(Tween.EASE_OUT)
+		tw.tween_property(n, "position", part[1], 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 ## Green light spill from a selected slot (side "L"/"R", index 0..3).
@@ -197,7 +216,7 @@ func _add_lamp_light(n: Node3D) -> void:
 		var g := OmniLight3D.new()
 		g.position = l.position + Vector3(0, 0.45, 0.25)
 		g.light_color = Color(0.3, 1.0, 0.45)
-		g.light_energy = 2.2
+		g.light_energy = 0.9
 		g.omni_range = 1.7
 		g.visible = false
 		add_child(g)
