@@ -30,6 +30,7 @@ const MENU := [
 @onready var _status: StatusBar = %Status
 @onready var _screen: Control = %Screen
 @onready var _overlay: ColorRect = %ScreenOverlay
+@onready var _glass: ColorRect = %Glass
 @onready var _idle_page: Control = %IdlePage
 @onready var _briefing_page: Control = %BriefingPage
 @onready var _left: Array[GlassButton] = [%SlotL0, %SlotL1, %SlotL2, %SlotL3]
@@ -67,6 +68,7 @@ func _ready() -> void:
 		_right[i].pressed.connect(_on_slot.bind(_select_right, i))
 	_wire_focus()
 	_overlay.resized.connect(func(): _overlay.material.set_shader_parameter("size", _overlay.size))
+	_glass.resized.connect(func(): _glass.material.set_shader_parameter("size", _glass.size))
 	_show_page(_idle_page)
 	_set_status("")
 	_power_on()

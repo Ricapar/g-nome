@@ -1,9 +1,10 @@
 @tool
 class_name KeyButton
 extends Button
-## A key on the bottom bar. The key itself is 3D (MenuFrame); this is its label and hit area.
-## Selected keys get an italic label and a green outline glow; the green LED is lit by the menu.
-## Text style: theme type "KeyButton" (italic: "KeyButtonSelected").
+## A key on the bottom bar. The key itself is 3D (MenuFrame); this is its face plate's hit area
+## and label (the label sits low on the plate, below the LED slot; see theme "KeyButton").
+## Selected keys get an italic label and a thin green outline along the plate's edge; the green
+## LED is lit by the menu. Keyboard/gamepad focus and hover show a faint pale outline.
 
 const GLOW := Color(0.25, 0.9, 0.42)
 
@@ -24,10 +25,10 @@ func _init() -> void:
 
 
 func _draw() -> void:
-	var r := Rect2(Vector2.ZERO, size)
+	var r := Rect2(Vector2.ZERO, size).grow(-3.0)
 	if button_pressed:
 		for k in 3: # soft outer glow from stacked strokes, then the crisp line
-			draw_rect(r.grow(2.0 + k * 2.0), Color(GLOW, 0.05), false, 2.0)
-		draw_rect(r.grow(1.0), GLOW, false, 2.0)
+			draw_rect(r.grow(1.5 + k * 2.0), Color(GLOW, 0.05), false, 2.0)
+		draw_rect(r, GLOW, false, 1.5)
 	elif _hover or has_focus():
-		draw_rect(r.grow(1.0), Color(0.8, 1.0, 0.95, 0.35), false, 1.5)
+		draw_rect(r, Color(0.8, 1.0, 0.95, 0.4), false, 1.5)

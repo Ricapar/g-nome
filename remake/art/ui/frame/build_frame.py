@@ -7,8 +7,9 @@ spans a 16:9 view: x -9.6..9.6, z -5.4..5.4 (1 unit = 100 design px at 1080p); m
 x = +-9.6 is only seen on wider screens. Front faces point to -Y (glTF +Z, toward the camera).
 
 Godot assigns the real materials by name (ui/frame/menu_frame.gd):
-  red_paint, white_paint, steel_dark, steel_brushed, steel_face, black_coat, hazard, rubber,
-  glass_dark, lamp_orange, lamp_red, lamp_yellow, led_0..led_4.
+  red_paint, white_paint, steel_dark, steel_bezel, steel_drum, steel_brushed, steel_face,
+  black_coat, hazard, rubber, rubber_red, glass_dark, lamp_orange, lamp_red, lamp_yellow,
+  lamp_white, led_0..led_4.
 Vertex colours carry masks for the material shader: R = edge wear (convex edges),
 G = grime (concave corners).
 Empties named anchor_* mark where 2D controls go: location = rect centre on the front face,
@@ -25,9 +26,10 @@ OUT = sys.argv[sys.argv.index("--") + 1] if "--" in sys.argv else "menu_frame.gl
 
 COLOURS = {
     "red_paint": (0.45, 0.05, 0.04), "white_paint": (0.8, 0.8, 0.78), "steel_dark": (0.12, 0.12, 0.12),
-    "steel_brushed": (0.55, 0.55, 0.55), "steel_face": (0.6, 0.6, 0.6), "black_coat": (0.02, 0.02, 0.02), "hazard": (0.6, 0.45, 0.05),
+    "steel_bezel": (0.3, 0.3, 0.32), "steel_drum": (0.18, 0.18, 0.18),
+    "steel_brushed": (0.55, 0.55, 0.55), "steel_face": (0.25, 0.25, 0.26), "black_coat": (0.02, 0.02, 0.02), "hazard": (0.6, 0.45, 0.05),
     "rubber": (0.03, 0.03, 0.03), "glass_dark": (0.0, 0.02, 0.02), "lamp_orange": (1.0, 0.45, 0.05),
-    "lamp_red": (1.0, 0.1, 0.05), "lamp_yellow": (1.0, 0.8, 0.1), "rubber_red": (0.3, 0.03, 0.02),
+    "lamp_red": (1.0, 0.1, 0.05), "lamp_yellow": (1.0, 0.8, 0.1), "lamp_white": (1.0, 0.95, 0.85), "rubber_red": (0.3, 0.03, 0.02),
 }
 for _i in range(5):
     COLOURS["led_%d" % _i] = (0.02, 0.05, 0.03)
@@ -197,10 +199,28 @@ def light(name, x, z, y):
     return empty("light_" + name, (x, y, z))
 
 
-def lamp(name, x, z, w, h, y, mat="lamp_orange", with_light=True):
-    prism("lamp_" + name, oct_(w, h, min(w, h) * 0.3, x, z), 0.04, mat, y, bevel=0.0)
+def lamp(name, x, z, w, h, y, mat="lamp_orange", with_light=True, **plate):
+    """plate = pivot/rot/curve keywords when the lamp sits on a curved armour plate."""
+    prism("lamp_" + name, oct_(w, h, min(w, h) * 0.3, x, z), 0.04, mat, y, bevel=0.0, **plate)
     if with_light:
         light(name, x, z, y - 0.25)
+
+
+def expand(pts, d):
+    """Offset a convex outline outward by d (mitred corners), e.g. for a rim behind a plate."""
+    n = len(pts)
+    area = sum(pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1] for i in range(n))
+    sgn = 1.0 if area > 0 else -1.0
+    normals = []
+    for i in range(n):
+        e = Vector(pts[(i + 1) % n]) - Vector(pts[i])
+        normals.append(Vector((e.y, -e.x)).normalized() * sgn)  # outward for a CCW outline
+    out = []
+    for i in range(n):
+        n1, n2 = normals[i - 1], normals[i]
+        m = (n1 + n2) * (d / max(1.0 + n1.dot(n2), 0.2))
+        out.append((pts[i][0] + m.x, pts[i][1] + m.y))
+    return out
 
 
 # ---------------------------------------------------------------------------------- layout
@@ -208,9 +228,15 @@ EDGE = 9.6                       # outer edge of the 16:9 core
 PW = 2.3                         # pillar width
 SLOT_Z = [1.75, 0.85, -0.05, -0.95]
 SLOT_W, SLOT_H = 1.72, 0.64
-SCREEN_W, SCREEN_H, SCREEN_CZ = 13.2, 7.2, 1.3
+SCREEN_W, SCREEN_H, SCREEN_CZ = 13.2, 6.9, 1.15
+SCREEN_CUT = (0.6, 0.3)          # glass corner chamfers (top, bottom); the 2D screen cuts the same
 KEY_X = [-5.2, -2.6, 0.0, 2.6, 5.2]
 KEY_W, KEY_H, KEY_CZ = 2.36, 1.12, -4.66
+
+
+def screen_outline(w, h, ct, cb, cz=SCREEN_CZ):
+    """Screen-shaped octagon: big chamfers at the top corners, smaller at the bottom."""
+    return crect(w, h, ct, ct, cb, cb, 0, cz)
 
 
 def build_pillar(s):
@@ -226,61 +252,96 @@ def build_pillar(s):
     yaw = -s * 9.0
     piv = (X(PW), 0.0)
     C = (X(PW / 2), 0.2)  # armour wraps around the pillar axis
+    top = dict(pivot=piv, rot=(0, 0, yaw), curve=C)          # mounted on the top plate
+    low = dict(pivot=piv, rot=(0, 0, yaw * 0.5), curve=C)    # mounted on the lower plate
     # core column
-    prism("core_" + tag, P([(0.1, -5.6), (2.2, -5.6), (2.2, 5.6), (0.1, 5.6)]), 1.4, "steel_dark", -0.45)
-    # ---- top armour: main plate with a cut corner, a layered plate, chevrons, lights, vents
-    prism("armour_top_" + tag, P([(0.0, 2.38), (PW, 2.38), (PW, 4.35), (1.55, 5.6), (0.0, 5.6)]),
-          0.55, "red_paint", -1.1, piv, (0, 0, yaw), curve=C, bevel=0.07)
-    prism("armour_top_b_" + tag, P([(0.22, 3.25), (1.95, 3.25), (1.95, 4.15), (1.35, 4.95), (0.22, 4.95)]),
-          0.3, "red_paint", -1.32, piv, (0, 0, yaw), curve=C, bevel=0.05)
-    for k in range(3 if s < 0 else 0):  # chevrons on the left, the emblem decal on the right
-        u0 = 0.45 + 0.42 * k
-        prism("chevron_%s%d" % (tag, k), P([(u0, 3.45), (u0 + 0.2, 3.45), (u0 + 0.62, 3.95), (u0 + 0.62, 4.2), (u0, 3.6)]),
-              0.03, "white_paint", -1.345, piv, (0, 0, yaw), curve=C, bevel=0.008, segments=1)
+    prism("core_" + tag, P([(0.1, -5.6), (2.2, -5.6), (2.2, 5.9), (0.1, 5.9)]), 1.4, "steel_dark", -0.45)
+
+    def bolts(name, uz, y, mount):
+        for k, (u, z) in enumerate(uz):
+            prism("bolt_%s_%s%d" % (name, tag, k), oct_(0.075, 0.075, 0.022, X(u), z), 0.04, "steel_brushed", y, bevel=0.008, segments=1, **mount)
+
+    def seam(name, a, b, y, mount, w=0.025):
+        (u0, z0), (u1, z1) = a, b
+        if abs(z1 - z0) < 1e-6:
+            pts = [(u0, z0 - w / 2), (u1, z0 - w / 2), (u1, z0 + w / 2), (u0, z0 + w / 2)]
+        else:
+            pts = [(u0 - w / 2, z0), (u0 + w / 2, z0), (u1 + w / 2, z1), (u1 - w / 2, z1)]
+        prism("seam_%s_%s" % (name, tag), P(pts), 0.02, "black_coat", y, bevel=0.0, **mount)
+
+    # ---- top armour: a steel rim behind the main plate, a layered inner plate, a big white wedge
+    # at the outer corner, orange indicators, a vent, an orange lamp strip on the inner edge
+    top_outline = [(0.0, 2.38), (PW, 2.38), (PW, 4.35), (1.55, 5.75), (0.0, 5.75)]
+    prism("armour_top_rim_" + tag, P(expand(top_outline, 0.07)), 0.5, "steel_dark", -1.03, bevel=0.05, **top)
+    prism("armour_top_" + tag, P(top_outline), 0.55, "red_paint", -1.1, bevel=0.07, **top)
+    prism("armour_top_b_" + tag, P([(0.75, 3.25), (1.95, 3.25), (1.95, 4.15), (1.45, 4.75), (0.75, 4.75)]),
+          0.3, "red_paint", -1.32, bevel=0.05, **top)
+    prism("wedge_" + tag, P([(0.0, 5.65), (0.75, 5.65), (0.0, 3.95)]), 0.03, "white_paint", -1.13, bevel=0.008, segments=1, **top)
+    prism("wedge_b_" + tag, P([(0.0, 3.75), (0.42, 3.75), (0.0, 3.0)]), 0.03, "white_paint", -1.13, bevel=0.008, segments=1, **top)
+    for k in range(2 if s < 0 else 0):  # slashes on the left inner plate, the emblem decal on the right
+        u0 = 0.95 + 0.42 * k
+        prism("chevron_%s%d" % (tag, k), P([(u0, 3.4), (u0 + 0.2, 3.4), (u0 + 0.55, 3.95), (u0 + 0.55, 4.2), (u0, 3.55)]),
+              0.03, "white_paint", -1.345, bevel=0.008, segments=1, **top)
     for k in range(3):
-        prism("ind_%s%d" % (tag, k), P([(0.3, 2.6 + 0.17 * k), (0.62, 2.6 + 0.17 * k), (0.62, 2.7 + 0.17 * k), (0.3, 2.7 + 0.17 * k)]),
-              0.03, "lamp_yellow" if k else "lamp_orange", -1.13, piv, (0, 0, yaw), curve=C, bevel=0.0)
+        prism("ind_%s%d" % (tag, k), P([(0.3, 2.58 + 0.17 * k), (0.7, 2.58 + 0.17 * k), (0.7, 2.68 + 0.17 * k), (0.3, 2.68 + 0.17 * k)]),
+              0.03, "lamp_orange", -1.13, bevel=0.0, **top)
     light("ind_" + tag, X(0.5), 2.8, -1.5)
     if s > 0:
-        empty("decal_emblem_R", (X(1.08), -1.33, 4.0), (1.95, 1.0, 1.22))
+        empty("decal_emblem_R", (X(1.35), -1.33, 4.0), (1.15, 1.0, 0.85))
     empty("text_" + tag, (X(1.25), -1.16, -4.38))
-    prism("vent_frame_" + tag, P([(1.1, 2.55), (2.05, 2.55), (2.05, 3.05), (1.1, 3.05)]), 0.06, "steel_dark", -1.15, piv, (0, 0, yaw), curve=C, bevel=0.02)
+    prism("vent_frame_" + tag, P([(1.1, 2.5), (2.05, 2.5), (2.05, 3.05), (1.1, 3.05)]), 0.06, "steel_dark", -1.15, bevel=0.02, **top)
     for k in range(4):
-        prism("vent_slat_%s%d" % (tag, k), P([(1.17, 2.62 + 0.11 * k), (1.98, 2.62 + 0.11 * k), (1.98, 2.67 + 0.11 * k), (1.17, 2.67 + 0.11 * k)]),
-              0.03, "black_coat", -1.17, piv, (0, 0, yaw), curve=C, bevel=0.0)
-    # rams and hoses on the outer side
+        prism("vent_slat_%s%d" % (tag, k), P([(1.17, 2.58 + 0.11 * k), (1.98, 2.58 + 0.11 * k), (1.98, 2.63 + 0.11 * k), (1.17, 2.63 + 0.11 * k)]),
+              0.03, "black_coat", -1.17, bevel=0.0, **top)
+    prism("edge_housing_" + tag, P([(2.0, 3.0), (2.27, 3.0), (2.27, 4.3), (2.0, 4.3)]), 0.05, "black_coat", -1.14, bevel=0.01, **top)
+    lamp("edge_" + tag, X(2.135), 3.65, 0.07, 1.05, -1.17, **top)
+    seam("top_h", (0.1, 3.15), (2.2, 3.15), -1.115, top)
+    seam("top_v", (0.72, 2.5), (0.72, 3.15), -1.115, top)
+    bolts("top", [(0.12, z) for z in (2.55, 3.05, 3.55, 4.05, 4.55, 5.05, 5.5)] + [(2.18, z) for z in (2.55, 3.05, 3.55, 4.05)]
+          + [(u, 2.5) for u in (0.6, 1.1, 1.6, 2.1)] + [(u, 5.63) for u in (1.1, 1.45)] + [(1.95, 5.3), (2.17, 4.6)], -1.15, top)
+    # rams and hoses on the outer side, in front of the plate so they show at 16:9
     for k, z0 in enumerate((4.75, 3.05)):
-        cylinder("ram_sleeve_%s%d" % (tag, k), 0.17, 1.0, "black_coat", (X(0.15), -0.75, z0), axis="X")
-        cylinder("ram_rod_%s%d" % (tag, k), 0.085, 1.5, "steel_brushed", (X(-0.75), -0.75, z0), axis="X")
-        cylinder("ram_collar_%s%d" % (tag, k), 0.2, 0.12, "steel_brushed", (X(0.62), -0.75, z0), axis="X")
+        cylinder("ram_sleeve_%s%d" % (tag, k), 0.17, 1.0, "black_coat", (X(0.15), -1.5, z0), axis="X")
+        cylinder("ram_rod_%s%d" % (tag, k), 0.085, 1.5, "steel_brushed", (X(-0.75), -1.5, z0), axis="X")
+        cylinder("ram_collar_%s%d" % (tag, k), 0.2, 0.12, "steel_brushed", (X(0.62), -1.5, z0), axis="X")
     cable("hose_%s0" % tag, [(X(0.25), -0.9, 5.5), (X(-0.15), -1.2, 4.0), (X(0.1), -1.1, 2.5), (X(0.35), -0.8, 2.25)], 0.07)
     cable("hose_%s1" % tag, [(X(0.5), -0.7, 5.5), (X(0.05), -0.95, 3.9), (X(0.3), -0.9, 2.3)], 0.05)
-    # ---- collar stack: steel drums with a framed opening for each glass button
+    # ---- collar stack: dark steel drums with a framed opening for each glass button
     cx = X(PW / 2)
     cylinder("collar_cap_top_" + tag, 1.2, 0.14, "steel_brushed", (cx, 0.0, 2.27))
     for i, z in enumerate(SLOT_Z):
-        cylinder("drum_%s%d" % (tag, i), 1.1, 0.8, "steel_brushed", (cx, 0.0, z), bevel=0.06)
-        ring("drum_bezel_%s%d" % (tag, i), oct_(2.0, 0.8, 0.12, cx, z), oct_(SLOT_W + 0.06, SLOT_H + 0.06, 0.08, cx, z),
+        cylinder("drum_%s%d" % (tag, i), 1.1, 0.8, "steel_drum", (cx, 0.0, z), bevel=0.06)
+        ring("drum_bezel_%s%d" % (tag, i), oct_(2.06, 0.84, 0.12, cx, z), oct_(SLOT_W + 0.06, SLOT_H + 0.06, 0.08, cx, z),
              0.25, "steel_dark", -1.2, slope=0.06, bevel=0.03)
         prism("drum_back_%s%d" % (tag, i), oct_(SLOT_W + 0.1, SLOT_H + 0.1, 0.08, cx, z), 0.1, "black_coat", -1.05, bevel=0.0)
         cylinder("drum_sep_%s%d" % (tag, i), 1.16, 0.1, "steel_brushed", (cx, 0.0, z - 0.45), bevel=0.02)
-        lamp("slot_%s%d" % (tag, i), cx, z - 0.45, 0.22, 0.06, -1.18)
+        lamp("slot_%s%d" % (tag, i), cx, z - 0.45, 0.22, 0.05, -1.18)
         anchor("slot_%s%d" % (tag, i), cx, z, SLOT_W, SLOT_H, -1.22)
     # ---- lower armour with a foot that reaches in under the key bar
-    prism("armour_low_" + tag, P([(0.0, -1.5), (PW, -1.5), (PW, -3.85), (3.15, -4.45), (3.15, -5.6), (0.0, -5.6)]),
-          0.55, "red_paint", -1.1, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.07)
-    prism("hazard_" + tag, P([(0.08, -1.6), (2.22, -1.6), (2.22, -1.95), (0.08, -1.95)]), 0.04, "hazard", -1.14, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.01)
-    prism("grille_frame_" + tag, P([(0.45, -2.25), (1.95, -2.25), (1.95, -3.45), (0.45, -3.45)]), 0.08, "steel_dark", -1.16, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.03)
+    low_outline = [(0.0, -1.5), (PW, -1.5), (PW, -3.85), (3.15, -4.45), (3.15, -5.6), (0.0, -5.6)]
+    prism("armour_low_rim_" + tag, P(expand(low_outline, 0.07)), 0.5, "steel_dark", -1.03, bevel=0.05, **low)
+    prism("armour_low_" + tag, P(low_outline), 0.55, "red_paint", -1.1, bevel=0.07, **low)
+    prism("hazard_" + tag, P([(1.25, -1.6), (2.22, -1.6), (2.22, -1.92), (1.25, -1.92)]), 0.04, "hazard", -1.14, bevel=0.01, **low)
+    prism("grille_frame_" + tag, P([(1.2, -2.05), (2.15, -2.05), (2.15, -3.3), (1.2, -3.3)]), 0.08, "steel_dark", -1.16, bevel=0.03, **low)
     for k in range(9):
-        prism("grille_slat_%s%d" % (tag, k), P([(0.55, -2.37 - 0.12 * k), (1.85, -2.37 - 0.12 * k), (1.85, -2.42 - 0.12 * k), (0.55, -2.42 - 0.12 * k)]),
-              0.03, "black_coat", -1.18, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.0)
+        prism("grille_slat_%s%d" % (tag, k), P([(1.28, -2.17 - 0.12 * k), (2.07, -2.17 - 0.12 * k), (2.07, -2.22 - 0.12 * k), (1.28, -2.22 - 0.12 * k)]),
+              0.03, "black_coat", -1.18, bevel=0.0, **low)
+    prism("ind_panel_" + tag, P([(2.68, -4.55), (3.06, -4.55), (3.06, -5.42), (2.68, -5.42)]), 0.04, "black_coat", -1.13, bevel=0.01, **low)
+    for k in range(3):
+        prism("ind_low_%s%d" % (tag, k), P([(2.76, -4.7 - 0.24 * k), (2.98, -4.7 - 0.24 * k), (2.98, -4.78 - 0.24 * k), (2.76, -4.78 - 0.24 * k)]),
+              0.03, "lamp_orange", -1.16, bevel=0.0, **low)
+    light("ind_low_" + tag, X(2.87), -4.95, -1.4)
     for k in range(2):
-        u0 = 1.45 + 0.55 * k
-        prism("foot_chevron_%s%d" % (tag, k), P([(u0, -5.15), (u0 + 0.28, -5.15), (u0 + 0.6, -4.85), (u0 + 0.32, -4.85)]),
-              0.03, "white_paint", -1.14, piv, (0, 0, yaw * 0.5), curve=C, bevel=0.008, segments=1)
+        u0 = 1.3 + 0.55 * k
+        prism("foot_chevron_%s%d" % (tag, k), P([(u0, -5.3), (u0 + 0.28, -5.3), (u0 + 0.6, -4.95), (u0 + 0.32, -4.95)]),
+              0.03, "white_paint", -1.14, bevel=0.008, segments=1, **low)
+    seam("low_v", (1.05, -1.55), (1.05, -3.8), -1.115, low)
+    seam("low_h", (0.1, -3.9), (3.05, -3.9), -1.115, low)
+    bolts("low", [(0.12, z) for z in (-1.7, -2.3, -2.9, -3.5, -4.1, -4.7, -5.3)] + [(2.18, z) for z in (-1.7, -2.3, -2.9, -3.5)]
+          + [(u, -5.48) for u in (0.6, 1.2, 1.8, 2.4, 3.0)] + [(u, -1.6) for u in (0.5, 1.0)] + [(2.6, -4.15), (3.03, -4.6)], -1.15, low)
     for k, z0 in enumerate((-2.45, -3.75)):
-        cylinder("piston_%s%d" % (tag, k), 0.13, 1.1, "steel_brushed", (X(-0.2), -0.85, z0), axis="X")
-        cylinder("piston_cap_%s%d" % (tag, k), 0.2, 0.25, "black_coat", (X(0.25), -0.85, z0), axis="X")
+        cylinder("piston_%s%d" % (tag, k), 0.13, 1.1, "steel_brushed", (X(0.1), -1.3, z0), axis="X")
+        cylinder("piston_cap_%s%d" % (tag, k), 0.2, 0.25, "black_coat", (X(0.55), -1.3, z0), axis="X")
     # cables from the pillar into the machinery under the screen
     cable("cable_%s0" % tag, [(X(2.0), -1.0, -1.45), (X(2.6), -1.05, -2.2), (X(3.1), -0.95, -2.75)], 0.07)
     cable("cable_%s1" % tag, [(X(2.1), -0.8, -1.4), (X(2.9), -0.85, -2.0), (X(3.6), -0.8, -2.62)], 0.05)
@@ -293,58 +354,74 @@ def build_pillar(s):
 
 
 def build_bezel():
-    W, H = 14.3, 8.1
-    ow, oh = SCREEN_W + 0.3, SCREEN_H + 0.26
-    ring("bezel_outer", oct_(W, H, 0.65, 0, SCREEN_CZ - 0.02), oct_(ow, oh, 0.45, 0, SCREEN_CZ), 0.5, "steel_dark", -0.9, bevel=0.08)
-    ring("bezel_trim", oct_(W - 0.3, H - 0.3, 0.55, 0, SCREEN_CZ - 0.02), oct_(W - 0.42, H - 0.42, 0.5, 0, SCREEN_CZ - 0.02),
-         0.04, "steel_brushed", -0.93, bevel=0.01, segments=1)
-    ring("bezel_slope", oct_(ow, oh, 0.45, 0, SCREEN_CZ), oct_(SCREEN_W, SCREEN_H, 0.38, 0, SCREEN_CZ), 0.3, "steel_dark", -0.9,
-         slope=0.45, bevel=0.02)
-    prism("screen_glass", oct_(SCREEN_W + 0.04, SCREEN_H + 0.04, 0.38, 0, SCREEN_CZ), 0.05, "glass_dark", -0.44, bevel=0.0)
+    """A narrow grey steel band with big chamfers at the top, a bright inner lip, then a dark
+    sloped recess down to the glass. Above it a dark header strip fills the top of the view."""
+    W, H = 13.9, 7.7
+    ow, oh = SCREEN_W + 0.3, SCREEN_H + 0.4
+    ct, cb = SCREEN_CUT
+    ring("bezel_outer", screen_outline(W, H, ct + 0.4, cb + 0.2), screen_outline(ow, oh, ct + 0.18, cb + 0.1), 0.5, "steel_bezel", -0.9, bevel=0.06)
+    ring("bezel_lip", screen_outline(ow + 0.02, oh + 0.02, ct + 0.19, cb + 0.11), screen_outline(ow - 0.08, oh - 0.08, ct + 0.14, cb + 0.08),
+         0.06, "steel_brushed", -0.94, bevel=0.01, segments=1)
+    ring("bezel_slope", screen_outline(ow - 0.08, oh - 0.08, ct + 0.14, cb + 0.08), screen_outline(SCREEN_W, SCREEN_H, ct, cb), 0.3, "steel_dark", -0.9,
+         slope=0.4, bevel=0.02)
+    prism("screen_glass", screen_outline(SCREEN_W + 0.04, SCREEN_H + 0.04, ct, cb), 0.05, "glass_dark", -0.44, bevel=0.0)
     anchor("screen", 0, SCREEN_CZ, SCREEN_W, SCREEN_H, -0.46)
-    for x in (-6.85, -3.4, 0.0, 3.4, 6.85):
-        for z in (SCREEN_CZ + 3.88, SCREEN_CZ - 3.88):
-            cylinder("bolt_%.2f_%.2f" % (x, z), 0.065, 0.08, "steel_brushed", (x, -0.94, z), axis="Y", bevel=0.015, segments=16)
-    for z in (SCREEN_CZ + 2.0, SCREEN_CZ - 2.0):
-        for x in (-7.0, 7.0):
-            cylinder("bolt_side_%.1f_%.1f" % (x, z), 0.065, 0.08, "steel_brushed", (x, -0.94, z), axis="Y", bevel=0.015, segments=16)
-    # clips on top of the bezel with hazard bands (as in the original)
-    for x in (-4.6, 4.6):
-        prism("clip_%.1f" % x, oct_(1.5, 0.42, 0.1, x, 5.33), 0.45, "red_paint", -1.0, bevel=0.04)
-        prism("clip_hz_%.1f" % x, oct_(1.3, 0.16, 0.03, x, 5.33), 0.03, "hazard", -1.02, bevel=0.0)
-    # header housing with lamps
-    prism("header", crect(6.2, 0.62, 0.0, 0.0, 0.22, 0.22, 0, 5.2), 0.7, "steel_dark", -1.0, bevel=0.05)
-    for x in (-2.4, -0.8, 0.8, 2.4):
-        lamp("header_%.1f" % x, x, 5.18, 0.5, 0.13, -1.02, "lamp_red" if abs(x) > 2 else "lamp_orange")
-    # machinery strip under the screen: housing, light bar, lamp pods, pipes
-    prism("under_strip", crect(13.8, 0.5, 0.1, 0.1, 0.1, 0.1, 0, -2.98), 0.6, "steel_dark", -0.85, bevel=0.04)
-    lamp("under_bar", 0.0, -2.98, 1.8, 0.09, -0.87)
+    for x in (-5.6, -2.8, 2.8, 5.6):
+        cylinder("bolt_%.2f" % x, 0.05, 0.06, "steel_brushed", (x, -0.93, SCREEN_CZ - H / 2 + 0.1), axis="Y", bevel=0.01, segments=16)
+    for z in (SCREEN_CZ + 1.8, SCREEN_CZ - 1.8):
+        for x in (-W / 2 + 0.1, W / 2 - 0.1):
+            cylinder("bolt_side_%.1f_%.1f" % (x, z), 0.05, 0.06, "steel_brushed", (x, -0.93, z), axis="Y", bevel=0.01, segments=16)
+    # raised steel clips over the bezel's top edge (the original has them in red; here steel)
+    top = SCREEN_CZ + H / 2
+    for x in (-4.3, 4.3):
+        prism("clip_%.1f" % x, crect(1.6, 0.34, 0.1, 0.1, 0.0, 0.0, x, top + 0.04), 0.4, "steel_bezel", -0.97, bevel=0.03)
+    # header strip: dark steel above the bezel up to the top of the view, a thin dark window,
+    # small red LED modules and end lamps
+    prism("header", crect(14.6, 1.1, cx=0, cz=top + 0.5), 0.7, "black_coat", -0.72, bevel=0.03)
+    prism("header_window", crect(7.4, 0.1, cx=0, cz=top + 0.1), 0.03, "glass_dark", -0.74, bevel=0.0)
+    for x in (-1.5, 1.5):
+        prism("header_mod_%.1f" % x, oct_(0.56, 0.16, 0.03, x, top + 0.3), 0.05, "black_coat", -0.76, bevel=0.0)
+        lamp("header_%.1f" % x, x, top + 0.3, 0.44, 0.07, -0.78, "lamp_red")
+    for x in (-5.4, 5.4):
+        lamp("header_end_%.1f" % x, x, top + 0.3, 0.22, 0.08, -0.74, "lamp_red", with_light=False)
+    # machinery strip under the screen: a slim housing, lamp pods, a short light bar, pipes
+    prism("under_strip", crect(13.8, 0.36, 0.08, 0.08, 0.08, 0.08, 0, -2.98), 0.6, "steel_dark", -0.85, bevel=0.03)
+    lamp("under_bar", 2.6, -2.98, 0.8, 0.06, -0.87)
+    lamp("under_white", -0.6, -2.98, 0.12, 0.1, -0.87, "lamp_white")
     for x in (-5.8, -4.0, -2.2, 2.2, 4.0, 5.8):
-        cylinder("pod_%.1f" % x, 0.11, 0.08, "steel_brushed", (x, -0.9, -2.98), axis="Y", bevel=0.01, segments=20)
-        lamp("pod_%.1f" % x, x, -2.98, 0.11, 0.11, -0.95, with_light=abs(x) > 5)
-    for z, r in ((-2.76, 0.045), (-3.2, 0.055)):
-        cylinder("under_pipe_%.2f" % z, r, 13.6, "rubber" if r > 0.05 else "steel_brushed", (0, -0.92, z), axis="X", bevel=0.0)
-    # status housing with a recessed channel
-    ring("status_housing", oct_(13.0, 0.66, 0.14, 0, -3.55), oct_(12.45, 0.44, 0.07, 0, -3.55), 0.5, "steel_dark", -0.85,
+        cylinder("pod_%.1f" % x, 0.08, 0.08, "steel_brushed", (x, -0.9, -2.98), axis="Y", bevel=0.01, segments=20)
+        lamp("pod_%.1f" % x, x, -2.98, 0.08, 0.08, -0.95, with_light=abs(x) > 5)
+    for z, r in ((-2.78, 0.04), (-3.18, 0.05)):
+        cylinder("under_pipe_%.2f" % z, r, 13.6, "rubber" if r > 0.045 else "steel_brushed", (0, -0.92, z), axis="X", bevel=0.0)
+    # status housing: light steel rim with a recessed black channel
+    ring("status_housing", oct_(13.0, 0.66, 0.14, 0, -3.55), oct_(12.45, 0.44, 0.07, 0, -3.55), 0.5, "steel_bezel", -0.85,
          slope=0.12, bevel=0.03)
     prism("status_channel", oct_(12.6, 0.5, 0.07, 0, -3.55), 0.05, "black_coat", -0.6, bevel=0.0)
     anchor("status", 0, -3.55, 12.45, 0.44, -0.86)
 
 
 def build_keys():
+    """Chunky steel keys: a dark weathered face plate covers the sloped top, with a black LED slot
+    near the top edge; the label (2D) sits below the slot."""
     prism("key_base", crect(13.9, 1.6, 0.2, 0.2, 0.0, 0.0, 0, -4.72), 0.8, "steel_dark", -0.6, bevel=0.05)
     tilt = 7.0
+
+    def y_face(z):  # the sloped top face of a key body at height z
+        return -1.18 + 0.14 * ((z - (-5.24)) / 1.16)
+
     for i, x in enumerate(KEY_X):
         # side profile: the face leans back toward the top
         profile("key_body_%d" % i, [(-1.18, -5.24), (-0.6, -5.24), (-0.6, -4.08), (-1.04, -4.08)], x - KEY_W / 2, KEY_W,
-                "steel_brushed", bevel=0.07)
-        zc = KEY_CZ - 0.1
-        yc = -1.18 + 0.14 * ((zc - (-5.24)) / 1.16) - 0.015
-        prism("key_plate_%d" % i, oct_(KEY_W - 0.36, 0.6, 0.08, x, zc), 0.025, "steel_face", yc, (x, zc), (-tilt, 0, 0), bevel=0.012)
-        prism("key_led_%d" % i, oct_(0.5, 0.075, 0.03, x, KEY_CZ + 0.38), 0.03, "led_%d" % i, -1.08, bevel=0.0)
-        anchor("key_%d" % i, x, zc, KEY_W - 0.36, 0.6, yc - 0.02)
+                "steel_dark", bevel=0.07)
+        zc = KEY_CZ - 0.03
+        prism("key_plate_%d" % i, crect(KEY_W - 0.14, 1.0, 0.07, 0.07, 0.07, 0.07, x, zc), 0.025, "steel_face",
+              y_face(zc) - 0.015, (x, zc), (-tilt, 0, 0), bevel=0.012)
+        zs = KEY_CZ + 0.3
+        prism("key_slot_%d" % i, oct_(0.52, 0.12, 0.03, x, zs), 0.02, "glass_dark", y_face(zs) - 0.035, (x, zs), (-tilt, 0, 0), bevel=0.0)
+        prism("key_led_%d" % i, oct_(0.38, 0.055, 0.02, x, zs), 0.02, "led_%d" % i, y_face(zs) - 0.05, (x, zs), (-tilt, 0, 0), bevel=0.0)
+        anchor("key_%d" % i, x, zc, KEY_W - 0.2, 0.94, y_face(zc) - 0.04)  # the whole plate; the label sits low
     for x in (-6.55, -3.9, -1.3, 1.3, 3.9, 6.55):
-        lamp("gap_%.2f" % x, x, KEY_CZ, 0.07, 0.6, -1.0, with_light=abs(x) in (1.3, 6.55))
+        lamp("gap_%.2f" % x, x, KEY_CZ, 0.035, 0.4, -1.0, with_light=abs(x) in (1.3, 6.55))
 
 
 def build_wings():

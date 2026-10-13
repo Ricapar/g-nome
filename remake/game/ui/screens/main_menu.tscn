@@ -1,6 +1,8 @@
-[gd_scene load_steps=14 format=3]
+[gd_scene load_steps=17 format=3]
 
 [ext_resource type="Script" path="res://ui/screens/main_menu.gd" id="1_menu"]
+[ext_resource type="Shader" path="res://ui/shaders/screen_glass.gdshader" id="11_glass"]
+[ext_resource type="Texture2D" path="res://ui/materials/grime_noise.tres" id="12_noise"]
 [ext_resource type="Script" path="res://ui/frame/menu_frame.gd" id="2_frame"]
 [ext_resource type="Script" path="res://ui/components/glass_button.gd" id="3_glass"]
 [ext_resource type="Script" path="res://ui/components/key_button.gd" id="4_key"]
@@ -22,6 +24,10 @@ glow_hdr_threshold = 1.2
 [sub_resource type="ShaderMaterial" id="screen_mat"]
 shader = ExtResource("8_screen")
 shader_parameter/scanline_strength = 0.05
+
+[sub_resource type="ShaderMaterial" id="glass_mat"]
+shader = ExtResource("11_glass")
+shader_parameter/noise = ExtResource("12_noise")
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -53,12 +59,13 @@ layout_mode = 0
 mouse_filter = 2
 
 [node name="Glass" type="ColorRect" parent="Screen"]
+unique_name_in_owner = true
+material = SubResource("glass_mat")
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
-color = Color(0.02, 0.06, 0.065, 1)
 
 [node name="IdlePage" type="Control" parent="Screen"]
 unique_name_in_owner = true
@@ -125,10 +132,11 @@ text = "RENEGADE MERCS"
 [node name="MapPane" type="Control" parent="Screen/BriefingPage"]
 layout_mode = 1
 anchor_left = 0.035
-anchor_top = 0.13
+anchor_top = 0.135
 anchor_right = 0.51
-anchor_bottom = 0.79
+anchor_bottom = 0.8
 script = ExtResource("7_pane")
+tick = 0.0
 
 [node name="Map" type="Control" parent="Screen/BriefingPage/MapPane"]
 layout_mode = 1
@@ -144,10 +152,11 @@ script = ExtResource("9_map")
 [node name="TargetPane" type="Control" parent="Screen/BriefingPage"]
 layout_mode = 1
 anchor_left = 0.525
-anchor_top = 0.13
+anchor_top = 0.135
 anchor_right = 0.965
-anchor_bottom = 0.79
+anchor_bottom = 0.8
 script = ExtResource("7_pane")
+tick = 0.0
 
 [node name="Stage" type="Control" parent="Screen/BriefingPage/TargetPane"]
 layout_mode = 1
@@ -163,14 +172,14 @@ model_id = 2583
 
 [node name="Objective" type="HBoxContainer" parent="Screen/BriefingPage"]
 layout_mode = 1
-anchor_left = 0.08
-anchor_top = 0.82
+anchor_left = 0.075
+anchor_top = 0.825
 anchor_right = 0.95
-anchor_bottom = 0.89
-theme_override_constants/separation = 22
+anchor_bottom = 0.9
+theme_override_constants/separation = 24
 
 [node name="Box" type="Control" parent="Screen/BriefingPage/Objective"]
-custom_minimum_size = Vector2(20, 20)
+custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 size_flags_vertical = 4
 script = ExtResource("7_pane")
@@ -179,6 +188,8 @@ tick = 0.0
 
 [node name="Text" type="Label" parent="Screen/BriefingPage/Objective"]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.94, 0.96, 0.96, 1)
+theme_override_font_sizes/font_size = 28
 text = "Head for waypoint one"
 
 [node name="Chrome" type="Control" parent="Screen"]

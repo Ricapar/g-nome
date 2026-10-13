@@ -31,12 +31,14 @@ void fragment() {
 
 	vec3 col;
 	if (state == 0) {
+		// deep blue glass, darker and less saturated than the original's flat blue
 		float streak = texture(noise, vec2(p.x / 800.0, p.y / 4.0)).r;
-		col = mix(vec3(0.05, 0.08, 0.42), vec3(0.16, 0.24, 0.72), clamp(1.0 - t + streak * 0.25, 0.0, 1.0));
+		col = mix(vec3(0.05, 0.07, 0.3), vec3(0.17, 0.22, 0.58), clamp(1.0 - t + streak * 0.25, 0.0, 1.0));
+		col *= 0.92 + 0.16 * grain;
 	} else if (state >= 3) {
 		col = mix(vec3(0.015, 0.05, 0.035), vec3(0.03, 0.12, 0.07), clamp(1.0 - t * 1.1, 0.0, 1.0));
 	} else {
-		col = mix(vec3(0.020, 0.035, 0.040), vec3(0.055, 0.085, 0.090), clamp(1.0 - t, 0.0, 1.0));
+		col = mix(vec3(0.025, 0.045, 0.05), vec3(0.07, 0.105, 0.11), clamp(1.0 - t, 0.0, 1.0));
 		col *= 0.9 + 0.2 * grain;
 	}
 	// inner edge light: teal when idle/hover, neon green frame when selected

@@ -20,6 +20,9 @@ uniform vec4 wear_tint : source_color = vec4(1.0);
 uniform float wear_amount = 1.0;
 uniform float wear_roughness = 0.45;
 uniform float grime_amount = 0.55;
+// paint chips: where the base albedo loses its saturation (the grey flecks in a painted-metal
+// map) the wear layer shows through, so chipped paint reads as bare steel, not dark paint
+uniform float chip_amount = 0.0;
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -42,8 +45,11 @@ void fragment() {
 	vec3 w = tri_weights(wnrm);
 	vec3 p = wpos * scale;
 
-	vec3 albedo = (use_base_albedo ? tri(base_albedo, p, w).rgb : vec3(1.0)) * base_tint.rgb;
+	vec3 tex = tri(base_albedo, p, w).rgb;
+	vec3 albedo = (use_base_albedo ? tex : vec3(1.0)) * base_tint.rgb;
 	float rough = tri(base_rough, p, w).r * base_roughness;
+	float sat = (max(tex.r, max(tex.g, tex.b)) - min(tex.r, min(tex.g, tex.b))) / max(max(tex.r, max(tex.g, tex.b)), 1e-3);
+	float chip = (1.0 - smoothstep(0.22, 0.55, sat)) * chip_amount;
 	float metal = tri(base_metal, p, w).r * base_metallic;
 
 	// triplanar normal mapping (whiteout-style swizzle onto the world axes)
@@ -60,6 +66,7 @@ void fragment() {
 	float breakup = tri(base_rough, p * 2.7 + 0.31, w).r;
 	float edge = COLOR.r * wear_amount;
 	float wear = smoothstep(0.45, 0.6, edge + (breakup - 0.5) * 0.7) * step(0.02, edge);
+	wear = max(wear, chip);
 	vec3 bare = tri(wear_albedo, p * 1.6, w).rgb * wear_tint.rgb;
 	albedo = mix(albedo, bare, wear);
 	rough = mix(rough, tri(wear_rough, p * 1.6, w).r * wear_roughness, wear);

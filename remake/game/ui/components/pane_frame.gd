@@ -15,7 +15,9 @@ func _init() -> void:
 
 func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
-	draw_rect(r, Color(color, 0.75), false, 1.5)
+	draw_rect(r, Color(color, 0.85), false, 1.5)
+	if tick <= 0.0:
+		return
 	var c := color * 1.3
 	for corner: Vector2 in [Vector2(0, 0), Vector2(1, 0), Vector2(0, 1), Vector2(1, 1)]:
 		var p := corner * size

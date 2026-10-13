@@ -36,7 +36,7 @@ func _ready() -> void:
 	env.glow_hdr_threshold = 1.3
 	env.fog_enabled = hangar
 	env.fog_light_color = Color(0.05, 0.06, 0.07)
-	env.fog_density = 0.035
+	env.fog_density = 0.05
 	var we := WorldEnvironment.new()
 	we.environment = env
 	_viewport.add_child(we)
@@ -84,8 +84,9 @@ func _load_model() -> float:
 	node.position = Vector3(-box.get_center().x, -box.position.y, -box.get_center().z)
 	var radius := box.size.length() * 0.5
 	var dist := radius / sin(deg_to_rad(_cam.fov * 0.5))
-	_cam.position = Vector3(0, box.size.y * 0.4, dist * 1.05) # low, looking up a little
-	_cam.look_at(Vector3(0, box.size.y * 0.55, 0))
+	# close and low so the vehicle fills the pane (the target fills ~85% of the height)
+	_cam.position = Vector3(0, box.size.y * 0.35, dist * 0.8)
+	_cam.look_at(Vector3(0, box.size.y * 0.5, 0))
 	_pivot.rotation_degrees.y = 200.0
 	return radius
 
@@ -105,8 +106,8 @@ func _build_hangar(r: float) -> void:
 	dark.roughness = 0.55
 	var steel := _cc0_mat("Metal009", 0.8 / r)
 	steel.albedo_color = Color(0.5, 0.5, 0.52)
-	var lamp := _emissive(Color(1.0, 0.97, 0.9), 5.0)
-	var amber := _emissive(Color(1.0, 0.55, 0.15), 3.0)
+	var lamp := _emissive(Color(1.0, 0.97, 0.9), 2.0) # strips, not floodlights: they must not blow out
+	var amber := _emissive(Color(1.0, 0.55, 0.15), 2.2)
 	var hz := StandardMaterial3D.new()
 	hz.albedo_color = Color(0.8, 0.62, 0.08)
 	hz.roughness = 0.5
@@ -130,8 +131,8 @@ func _build_hangar(r: float) -> void:
 	for i in 4: # ceiling lamp rows receding into the haze
 		var z := r * 1.0 - i * r * 1.8
 		for j in [-1.5, -0.5, 0.5, 1.5]:
-			_box(Vector3(j * r * 1.0, h - 0.12, z), Vector3(r * 0.32, 0.03, r * 0.07), lamp)
-		_box(Vector3(0, h - 0.2, z), Vector3(w * 2, r * 0.1, r * 0.1), steel)
+			_box(Vector3(j * r * 1.0, h - 0.12, z), Vector3(r * 0.22, 0.03, r * 0.05), lamp)
+		_box(Vector3(0, h - 0.2, z), Vector3(w * 2, r * 0.1, r * 0.1), dark)
 	# back wall: blast door with a lit sill
 	_box(Vector3(0, h * 0.5, back), Vector3(w * 2, h, 0.2), dark)
 	_box(Vector3(0, r * 1.1, back + 0.15), Vector3(r * 3.0, r * 2.2, 0.1), steel)
@@ -156,7 +157,7 @@ func _build_hangar(r: float) -> void:
 	for x in [-1.2, 1.2]:
 		var l := OmniLight3D.new()
 		l.position = Vector3(x * r, h * 0.8, r * 0.4)
-		l.light_energy = 1.0
+		l.light_energy = 0.7
 		l.omni_range = r * 4
 		l.light_specular = 0.15
 		_viewport.add_child(l)

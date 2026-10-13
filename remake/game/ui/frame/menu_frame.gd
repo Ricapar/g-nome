@@ -18,7 +18,7 @@ const FRAME_HEIGHT := 11.3 # model units (1 = 100 design px); a margin so the pi
 const FOV := 24.0
 const KEY_TRAVEL := Vector3(0, -0.015, -0.09) # into the bar, a little down the slope
 
-static var _KEY_PART := RegEx.create_from_string("^(?:key_(?:body|plate|led)|anchor_key)_([0-9])$")
+static var _KEY_PART := RegEx.create_from_string("^(?:key_(?:body|plate|led|slot)|anchor_key)_([0-9])$")
 
 var camera := Camera3D.new()
 var _anchors := {}
@@ -83,7 +83,8 @@ func has_anchor(name: String) -> bool:
 func set_led(i: int, on: bool) -> void:
 	var m: StandardMaterial3D = _leds.get(i)
 	if m:
-		m.emission_energy_multiplier = 2.5 if on else 0.0
+		# a crisp green bar with a small halo, not a white blob (ACES clips high green to white)
+		m.emission_energy_multiplier = 1.4 if on else 0.0
 		m.albedo_color = Color(0.2, 1.0, 0.35) if on else Color(0.02, 0.05, 0.03)
 
 
@@ -130,7 +131,7 @@ func _build_environment() -> void:
 	env.ssao_power = 1.6
 	env.ssil_enabled = true
 	env.glow_enabled = true
-	env.glow_intensity = 0.4
+	env.glow_intensity = 0.3
 	env.glow_bloom = 0.0
 	env.glow_hdr_threshold = 1.4
 	env.adjustment_enabled = true
@@ -204,10 +205,10 @@ func _add_stencil(n: Node3D, text: String) -> void:
 func _add_lamp_light(n: Node3D) -> void:
 	var l := OmniLight3D.new()
 	l.position = n.global_position
-	var red := String(n.name).begins_with("light_header") and absf(n.global_position.x) > 2.0
+	var red := String(n.name).begins_with("light_header")
 	l.light_color = Color(1.0, 0.25, 0.1) if red else Color(1.0, 0.55, 0.18)
-	l.light_energy = 0.8
-	l.light_specular = 0.6
+	l.light_energy = 0.7
+	l.light_specular = 0.5
 	l.omni_range = 1.3
 	l.omni_attenuation = 1.8
 	add_child(l)
@@ -234,23 +235,36 @@ func _material(name: String) -> Material:
 	if _materials.has(name):
 		return _materials[name]
 	var m: Material
+	# Steel is mostly diffuse here (metallic well below 1): a fully metallic flat face only mirrors
+	# the dark sky behind the camera and renders black, while the target's steel reads as grey.
 	match name:
-		"red_paint":
-			m = _layered("PaintedMetal004", 0.32, Color(0.3, 0.075, 0.065), "Metal009", Color(0.75, 0.75, 0.78))
+		"red_paint": # matte chipped paint; the map's grey flecks become bare steel (chip_amount)
+			m = _layered("PaintedMetal004", 0.32, Color(0.3, 0.085, 0.075), "Metal009", Color(0.6, 0.6, 0.62),
+				true, {"base_roughness": 1.6, "chip_amount": 1.0, "wear_roughness": 0.7, "grime_amount": 0.8})
 		"white_paint":
-			m = _layered("PaintedMetal004", 0.32, Color(0.45, 0.45, 0.44), "Metal009", Color(0.75, 0.75, 0.78), false)
-			m.set_shader_parameter("base_metallic", 0.0)
-		"steel_dark":
-			m = _layered("Metal038", 0.45, Color(0.3, 0.31, 0.33), "Metal009", Color(0.9, 0.9, 0.92))
-		"steel_brushed":
-			m = _layered("Metal009", 0.45, Color(0.5, 0.51, 0.53), "Metal009", Color(0.95, 0.95, 0.95))
-		"steel_face": # key faces: bright brushed steel, labels engraved on top
-			m = _layered("Metal009", 0.6, Color(0.66, 0.67, 0.69), "Metal009", Color(0.95, 0.95, 0.95))
-			m.set_shader_parameter("grime_amount", 0.5)
+			m = _layered("PaintedMetal004", 0.32, Color(0.5, 0.5, 0.49), "Metal009", Color(0.62, 0.62, 0.64), false,
+				{"base_metallic": 0.0, "base_roughness": 1.6, "wear_roughness": 0.7})
+		"steel_dark": # frames, bezel, trays: dark grey scratched steel
+			m = _layered("Metal038", 0.22, Color(0.4, 0.41, 0.44), "Metal009", Color(0.8, 0.8, 0.82), true,
+				{"base_metallic": 0.35, "base_roughness": 1.3, "normal_strength": 0.5, "wear_roughness": 0.6})
+		"steel_bezel": # lighter steel: screen bezel band, status housing, clips
+			m = _layered("Metal009", 0.4, Color(0.36, 0.37, 0.39), "Metal009", Color(0.85, 0.85, 0.87), true,
+				{"base_metallic": 0.5, "base_roughness": 1.2, "normal_strength": 0.6, "grime_amount": 0.65})
+		"steel_drum": # collar drums: dark gunmetal with brushing
+			m = _layered("Metal009", 0.5, Color(0.3, 0.3, 0.3), "Metal009", Color(0.8, 0.8, 0.8), true,
+				{"base_metallic": 0.7, "base_roughness": 1.15})
+		"steel_brushed": # rods, bolts, rims: bright brushed steel
+			m = _layered("Metal009", 0.45, Color(0.5, 0.51, 0.53), "Metal009", Color(0.95, 0.95, 0.95), true,
+				{"base_metallic": 0.85, "base_roughness": 1.1})
+		"steel_face": # key faces: dark weathered steel, white labels on top
+			m = _layered("Metal038", 0.5, Color(0.34, 0.34, 0.35), "Metal009", Color(0.75, 0.75, 0.77), true,
+				{"base_metallic": 0.3, "base_roughness": 1.3, "normal_strength": 0.6, "grime_amount": 0.6})
 		"black_coat":
-			m = _layered("Metal027", 0.5, Color(0.4, 0.4, 0.42), "Metal038", Color(0.7, 0.7, 0.7))
+			m = _layered("Metal027", 0.5, Color(0.4, 0.4, 0.42), "Metal038", Color(0.7, 0.7, 0.7), true,
+				{"base_metallic": 0.2})
 		"hazard":
-			m = _layered("PaintedMetal016", 0.9, Color(1, 1, 1), "Metal038", Color(0.9, 0.9, 0.9))
+			m = _layered("PaintedMetal016", 0.9, Color(1, 1, 1), "Metal038", Color(0.9, 0.9, 0.9), true,
+				{"base_metallic": 0.2, "base_roughness": 1.3})
 		"rubber_red":
 			m = _layered("Rubber004", 0.9, Color(0.42, 0.06, 0.05), "Rubber004", Color(0.4, 0.05, 0.04))
 			m.set_shader_parameter("wear_amount", 0.0)
@@ -263,13 +277,13 @@ func _material(name: String) -> Material:
 			g.roughness = 0.25
 			g.metallic_specular = 0.7
 			m = g
-		"lamp_orange", "lamp_red", "lamp_yellow":
+		"lamp_orange", "lamp_red", "lamp_yellow", "lamp_white":
 			var e := StandardMaterial3D.new()
 			e.albedo_color = {"lamp_orange": Color(1.0, 0.5, 0.12), "lamp_red": Color(1.0, 0.15, 0.08),
-				"lamp_yellow": Color(1.0, 0.8, 0.2)}[name]
+				"lamp_yellow": Color(1.0, 0.8, 0.2), "lamp_white": Color(1.0, 0.95, 0.85)}[name]
 			e.emission_enabled = true
 			e.emission = e.albedo_color
-			e.emission_energy_multiplier = 2.2
+			e.emission_energy_multiplier = 1.9
 			m = e
 		_:
 			var e := StandardMaterial3D.new()
@@ -290,7 +304,9 @@ func _tex(set_id: String, map: String) -> Texture2D:
 
 
 ## Frame material: base layer `base` (tinted) wearing through to `wear` on convex edges.
-func _layered(base: String, scale: float, tint: Color, wear: String, wear_tint: Color, use_albedo := true) -> ShaderMaterial:
+## `params` overrides shader uniforms (base_metallic, base_roughness, normal_strength, ...).
+func _layered(base: String, scale: float, tint: Color, wear: String, wear_tint: Color, use_albedo := true,
+		params := {}) -> ShaderMaterial:
 	var m := ShaderMaterial.new()
 	m.shader = SHADER
 	m.set_shader_parameter("scale", scale)
@@ -305,4 +321,6 @@ func _layered(base: String, scale: float, tint: Color, wear: String, wear_tint: 
 	m.set_shader_parameter("wear_albedo", _tex(wear, "Color"))
 	m.set_shader_parameter("wear_rough", _tex(wear, "Roughness"))
 	m.set_shader_parameter("wear_tint", wear_tint)
+	for k in params:
+		m.set_shader_parameter(k, params[k])
 	return m
