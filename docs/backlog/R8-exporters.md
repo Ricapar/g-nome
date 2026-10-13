@@ -1,6 +1,20 @@
 # R8 — Remaining exporters: sprites/UI, waves, Smacker video
 
-Status: **todo**
+Status: **active**: waves done (2026-10-13); sprites and video still todo.
+
+## Progress
+- **Waves: done (2026-10-13).** Codec cracked statically (plain headerless IMA ADPCM, see
+  `docs/analysis.md` "Waves"). `tools/wave7l.py` (decoder, single-wave CLI) and
+  `tools/export_audio.py <G-NOME.BIN> <outdir>` → `<outdir>/audio/wave_<id>.wav` (592, 0
+  failures, 44.6 min, ~9 s run) + the two loose WAVs + `<outdir>/data/waves.json` (format,
+  duration, peak, flags, literal-id script references, and a `menu` mapping). The menu sounds
+  are identified and wired into the remake's `UiSounds` (runtime load from
+  `res://_import/audio`, placeholders as fallback).
+  Not done: byte-exact comparison against PCM captured from the running game (the decoder's
+  tables match the DLL bytes exactly and speech decodes cleanly, so this was skipped); the
+  user still has to judge the sounds by ear. `scripts` in waves.json only covers literal ids
+  in `DS*Wave(...)` and `script_334(id, ...)`; waves played through variables (arrays such as
+  2512 column 7, unit/weapon tables) are not traced yet.
 
 ## Goal
 Export every remaining asset type from the retail disc into formats Godot 4 can use directly:
@@ -81,7 +95,10 @@ Original data is never committed: all outputs go to `remake/game/_import/` (giti
   `SpriteChangePalette`/`SpriteFadePalette` ranges (RTLIB exports `ResGetMaxFadeColors`,
   `ResGetMaxTransColors`).
 
-### Type-12 waves (measured header; codec unknown)
+### Type-12 waves (measured header; codec now known, see Progress and analysis.md "Waves")
+The text below is the pre-RE research, kept for history. Resolved: f2 = compressed (IMA ADPCM,
+4:1, 16-bit out), f0 = load whole into memory; f1 still unconfirmed. `DecompressWave*` is a
+separate stream API the game's resource path doesn't use; the decoder is `ima2pcm`.
 - 32-byte header, then data: `u32 data_len (= size-32)`, `u8 f0, f1, f2, f3`, `u32 0`,
   `u32 resource_id (= index)`, then a 16-byte PCMWAVEFORMAT `{u16 tag=1, u16 ch, u32 rate,
   u32 bytes/s, u16 align, u16 bits}`.
@@ -139,7 +156,7 @@ Original data is never committed: all outputs go to `remake/game/_import/` (giti
    HUD per vehicle class). Record the result in the manifest or `docs/analysis.md`. Decoding
    types 15/16/20/21 (sprite/cel/button structures) is the way in. That needs RE of RTLIB's
    sprite statements; check `sa4`, `s75`, `sdf`, `s6b`, `sc0`, `sd9`, `s10`, `sb9` in script 7 and the menu scripts.
-3. **Wave codec.** RE `DecompressWaveInit/Data/Reset` in RTLIB32. Confirm header flag meanings
+3. **Wave codec. DONE 2026-10-13** (see Progress). Original plan: RE `DecompressWaveInit/Data/Reset` in RTLIB32. Confirm header flag meanings
    from `AudioCreateWave`/`ResCreateWaveEvent` and RENDER's `DSLoadWave`, and find where the
    decompressed length comes from. Use the REA MCP tools (`open_binary` RTLIB32.DLL →
    `batch_decompile` the exports). Note: the REA backend is shared with other sessions;
@@ -184,8 +201,7 @@ Original data is never committed: all outputs go to `remake/game/_import/` (giti
   black (`docs/analysis.md`), and it's not known yet whether windowed mode captures FMV.
 
 ## Open questions / risks
-- Wave codec is unknown. The flag meanings (f0, f1, f2) and decompressed length are
-  hypotheses. RE is needed (shared REA backend).
+- ~~Wave codec is unknown~~ resolved 2026-10-13 (IMA ADPCM). Open: meaning of header flag f1.
 - Meanings of internal types 13–16, 18, 20 and 21, and so how bitmaps group into
   sprites/buttons/animations. Without this, sprites are exported by id only.
 - Whether index 0 is the only transparent index (`ResGetMaxTransColors` hints at a range).
@@ -204,8 +220,8 @@ Original data is never committed: all outputs go to `remake/game/_import/` (giti
   - R2/`tools/dev/inject` infrastructure can be reused for PCM ground-truth capture.
 
 ## Notes to fold into analysis.md
-- **Type-11 row:** the type table's type-11 row says "sound/event records". Type 11 is the
-  int32 arrays (as described later in the same file and in `res7l.read_array`).
+- ~~**Type-11 row**~~ folded 2026-10-13 (type 11 = int32 arrays).
+- ~~**Type-12 header**~~ folded 2026-10-13 (analysis.md "Waves": header, codec, menu sounds).
 - **Palettes:** "the first [type-17 palette] equals key 6" is wrong. **2510 and 2511** equal
   key 6. 2487–2509 (odd) are the 12 mission palettes and differ only in 186..245.
 - **Internal types:** the index has types 13..21; there is no type 22.
@@ -215,6 +231,5 @@ Original data is never committed: all outputs go to `remake/game/_import/` (giti
   1102 of 1240 use only indices 0..185.
 - **Docstring:** the `tools/bitmap7l.py` module docstring still says LZW is "not implemented",
   but it is (`decompress_chunks`) and 72 sprites use it.
-- **Type-12 header:** the layout above, the format counts, and the `DecompressWave*` exports.
 - **Movies:** the key-4 movie table (index 0 = `domintro.smk`), player script 7 and its
   callers, and the SMK header table.

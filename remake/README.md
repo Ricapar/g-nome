@@ -12,6 +12,8 @@ Status: Phase 0 in progress. Nothing playable yet.
 2. Export the original assets and data from your disc (gitignored; never commit them):
    `.venv\Scripts\python -I tools/export_models.py <disc>\G-NOME\G-NOME.BIN remake/game/_import`
    and `.venv\Scripts\python -I tools/export_gamedata.py <disc>\G-NOME\G-NOME.BIN remake/game/_import`.
+   Sounds (all 592 waves; the menu uses the originals when present):
+   `.venv\Scripts\python -I tools/export_audio.py <disc>\G-NOME\G-NOME.BIN remake/game/_import`.
    Script listing: `.venv\Scripts\python -I tools/script7l.py <disc>\G-NOME\G-NOME.BIN > scripts.txt`.
 3. Open `remake/game` in Godot 4.7 and run it. The model viewer lists every MODL/MPRT.
    Arrow keys select, drag orbits, the wheel zooms, C toggles culling, X mirrors Z.

@@ -84,8 +84,8 @@ Index: 9440 entries of `{u8 type, u8 volume, u32 offset, u32 size}`.
 | 8 | `MPRT` | 154 | model parts, same stream format |
 | 9 | `OB3D` | 426 | 3D object definitions |
 | 10 | `OPRT` | 57 | object properties |
-| 11 | — | 709 | sound/event records |
-| 12 | — | 592 | waves, 22050 Hz (~24 MB, voice + SFX) |
+| 11 | — | 709 | int32 arrays (script data tables, `res7l.read_array`; see "Data tables") |
+| 12 | — | 592 | waves: IMA ADPCM or PCM, 11/22/44 kHz (~24 MB packed, 44.6 min; voice + SFX). See "Waves" below |
 | 13–22 | — | — | inline resources inside the BIN; offsets are relative to the key-5 block (`res7l.read_internal`) |
 | 17 | — | 14 | palettes, 944 bytes = 236 x RGBx (entries 10..245); the first equals key 6 |
 
@@ -134,6 +134,59 @@ the vehicle, and parts turn orange then red as they take damage (likely further 
 taller textures). Unverified: which frame index is which state, and how RENDER switches them. RENDER keeps a
 500-entry texture table keyed by basename (`FUN_100039cf`; lookup `FUN_10003fcb`).
 Pixel index i uses palette entry i-10 of a 236-entry palette (indices 0..9 = system colours).
+
+### Waves (type 12; `tools/wave7l.py`, exporter `tools/export_audio.py`)
+32-byte header, then `data_len` bytes:
+`u32 data_len; u8 f0, f1, f2, f3; u32 0; u32 resource_id; PCMWAVEFORMAT {u16 tag=1, u16 ch,
+u32 rate, u32 bytes/s, u16 align, u16 bits}`. The format is that of the *decoded* audio.
+`ResCreateWaveEvent` @ 0x10047451 reads the header and passes it to `AudioCreateWave` @
+0x1002f033 → `FUN_1002f168`, which copies the flags into the wave object:
+- f0 → obj +0x86: load the whole wave into memory (otherwise it may stream through a ring
+  buffer of `DAT_1005e5b0 << 13` bytes; short waves are always loaded whole);
+- f1 → obj +0x89: meaning not confirmed;
+- f2 → obj +0x8d: **compressed** (IMA ADPCM). Only id 284 (8-bit 11 kHz) has f2 = 0 and is raw PCM;
+- the u32 at +8 (always 0) → obj +0x80 (u16).
+
+Codec: `ima2pcm` @ 0x100342f0 (export #315), called by the in-memory loader `FUN_1002fba8`
+and the streamer `FUN_100327d0`. It is plain **IMA/DVI ADPCM with no block headers**: one
+continuous stream, predictor and step index start at 0 (`DAT_1005e970..78` zeroed), low
+nibble first. Mono: 2 samples per byte. Stereo: one frame per byte, low nibble = left, high
+nibble = right, separate state per channel. Output is always 16-bit, so decoded size =
+`data_len * 4`. RTLIB stores the tables premultiplied: `DAT_100529e0` = 89x8 difference
+table (`step>>3 + (c&4?step) + (c&2?step>>1) + (c&1?step>>2)`, standard IMA steps 7..32767)
+and `DAT_10052f70` = the index adjust table x8 (`-1,-1,-1,-1,2,4,6,8`); the index is kept
+x8 and clamped to 0..0x2c0. `tools/wave7l.py` regenerates both tables and they match the DLL
+bytes exactly. RIFF files with a compressed flag (`FUN_1002fa4c`) skip a 10-byte header
+first; the `DecompressWave*` exports (stream API with a 10-byte header, `u16 == 1` check)
+are not used by the game's own resource path.
+
+Measured on the export (2026-10-13): 592 waves, 0 failures, 44.6 min. Formats: 383 x 22050
+mono, 205 x 11025 mono, 2 x 22050 stereo (308, 309: ambient), 1 x 44100 mono (8398), 1 x
+11025 8-bit raw (284). Speech (e.g. 9267, 7011) shows clean formant harmonics; many voice
+lines touch full scale (hot mastering: the raw PCM wave 284 clips too), so clipping in the
+decoded output is from the source. Durations 0.14..31.9 s, median 2.7 s.
+
+Playback from scripts: the RENDER.R32 natives `DSPlayWave(id, volume 10000|15000, 0, loop,
+done_script, priority?, 1)`, `DSLoadWave`, `DSStopWave`, `DSUnloadWave`, `ObjectPlayWave(obj,
+id, …)`, and the helper `script_334(id, …)` (stops the previous one-shot, then
+`DSPlayWave(id, 10000, 0, 0, 332, 2000, 1)`). Every menu sound is gated by `if !G2116`
+(likely the sound-off option).
+
+**Front-end (main menu) sounds** (from `tools/script7l.py` listings; R10 has the menu table):
+| Wave | Length | Event | Evidence |
+|---|---|---|---|
+| 8403 | 0.43 s | bottom-bar key selected (GAME/NETWORK/LAB/OPTIONS/EXIT) | `script_8341(n)` (bar select, called by click scripts 8344-8349) plays it; also script 8538 (no static caller found) |
+| 8404 | 0.37 s | left/right column slot selected | `script_8353` (left column, G2054) and `script_8354` (right column, G2055) |
+| 74 | 0.16 s | "denied": action not available | `script_8350`, called e.g. by 8361 (when G2185 = -1), 8366 (SAVE when no campaign mission, G2141 not 1..22), 8385, 8388, 7548, 7725, and network submenu array 8621; also `script_334(74, …)` in scripts 1648/1682 |
+| 75 | 0.64 s | option toggled / confirmed | `script_8351`, called by 6330/6331 (joystick on/off), 6340/6341, 7433-7435, 7762; `script_334(75, …)` in 2220, 6001, 7766, 7959, 7960 |
+| 131 | 1.04 s | Escape on the menu: quit-confirm prompt | key 0x1b → script 8312: `script_334(131, 1, 1, 0)` + shows sprite 1998; Y → 8314 (quit), N/Esc → 8313 (no sound). Also 1953 (in mission) |
+| 8398 | 5.61 s, 44.1 kHz | menu background loop | `script_8315`: `DSPlayWave(8398, 10000, 0, 1, 0, 200, 1)` (arg 4 = loop) at menu start (5998); unloaded by 8316 |
+
+Hover plays **no** sound in the original: the hover scripts (column 5 of the menu arrays,
+8320-8338 → `script_8333` → `script_8340`) only move the status-text sprite 8536, and the
+leave scripts 8324/8331 hide it. The remake maps these in
+`remake/game/ui/components/ui_sounds.gd` (loads `res://_import/audio/wave_<id>.wav` at
+runtime; placeholders when the import is missing).
 
 FMV: `*.SMK` (Smacker) — G-NOME, DREAM, CREDITS, NEWS, WILKINS. Music: CD audio
 tracks (not present in a data-only extraction) + `TRK_01B.WAV`.

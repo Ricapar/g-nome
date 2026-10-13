@@ -31,7 +31,7 @@ anywhere.
 | R5 | Mission 1-1 sandbox in Godot: walk as soldier, commandeer, drive a HAWC | [R5-sandbox-1-1.md](backlog/R5-sandbox-1-1.md) | todo |
 | R6 | Weapons: decode weapon table (array 1281), projectiles and damage | [R6-weapons.md](backlog/R6-weapons.md) | todo |
 | R7 | AI: decode the unit AI scripts and behaviours | [R7-ai.md](backlog/R7-ai.md) | todo |
-| R8 | Remaining exporters: sprites/UI, waves, Smacker video | [R8-exporters.md](backlog/R8-exporters.md) | todo |
+| R8 | Remaining exporters: sprites/UI, waves, Smacker video | [R8-exporters.md](backlog/R8-exporters.md) | active (waves done; sprites, video todo) |
 | R9 | Per-world colours for scenery other than rocks in the mission viewer | [R9-scenery-palettes.md](backlog/R9-scenery-palettes.md) | todo |
 | R10 | UI: decode the original menu system (screens, buttons, actions, sprites) | [R10-menu-decode.md](backlog/R10-menu-decode.md) | todo |
 | R11 | UI: design system and Godot UI foundation (theme, components, vector + hi-res) | [R11-ui-foundation.md](backlog/R11-ui-foundation.md) | active |
