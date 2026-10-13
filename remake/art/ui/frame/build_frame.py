@@ -8,8 +8,8 @@ x = +-9.6 is only seen on wider screens. Front faces point to -Y (glTF +Z, towar
 
 Godot assigns the real materials by name (ui/frame/menu_frame.gd):
   red_paint, white_paint, steel_dark, steel_bezel, steel_drum, steel_brushed, steel_face,
-  black_coat, hazard, rubber, rubber_red, glass_dark, lamp_orange, lamp_red, lamp_yellow,
-  lamp_white, led_0..led_4.
+  black_coat, hazard, rubber, rubber_red, glass_dark, recess, lamp_orange, lamp_red,
+  lamp_yellow, lamp_white, led_0..led_4.
 Vertex colours carry masks for the material shader: R = edge wear (convex edges),
 G = grime (concave corners).
 Empties named anchor_* mark where 2D controls go: location = rect centre on the front face,
@@ -28,7 +28,7 @@ COLOURS = {
     "red_paint": (0.45, 0.05, 0.04), "white_paint": (0.8, 0.8, 0.78), "steel_dark": (0.12, 0.12, 0.12),
     "steel_bezel": (0.3, 0.3, 0.32), "steel_drum": (0.18, 0.18, 0.18),
     "steel_brushed": (0.55, 0.55, 0.55), "steel_face": (0.25, 0.25, 0.26), "black_coat": (0.02, 0.02, 0.02), "hazard": (0.6, 0.45, 0.05),
-    "rubber": (0.03, 0.03, 0.03), "glass_dark": (0.0, 0.02, 0.02), "lamp_orange": (1.0, 0.45, 0.05),
+    "rubber": (0.03, 0.03, 0.03), "glass_dark": (0.0, 0.02, 0.02), "recess": (0.01, 0.01, 0.01), "lamp_orange": (1.0, 0.45, 0.05),
     "lamp_red": (1.0, 0.1, 0.05), "lamp_yellow": (1.0, 0.8, 0.1), "lamp_white": (1.0, 0.95, 0.85), "rubber_red": (0.3, 0.03, 0.02),
 }
 for _i in range(5):
@@ -299,11 +299,12 @@ def build_pillar(s):
     seam("top_v", (0.72, 2.5), (0.72, 3.15), -1.115, top)
     bolts("top", [(0.12, z) for z in (2.55, 3.05, 3.55, 4.05, 4.55, 5.05, 5.5)] + [(2.18, z) for z in (2.55, 3.05, 3.55, 4.05)]
           + [(u, 2.5) for u in (0.6, 1.1, 1.6, 2.1)] + [(u, 5.63) for u in (1.1, 1.45)] + [(1.95, 5.3), (2.17, 4.6)], -1.15, top)
-    # rams and hoses on the outer side, in front of the plate so they show at 16:9
+    # rams on the outer side: chrome rods running into black sockets on the plate (in front
+    # of the plate so they show at 16:9)
     for k, z0 in enumerate((4.75, 3.05)):
-        cylinder("ram_sleeve_%s%d" % (tag, k), 0.17, 1.0, "black_coat", (X(0.15), -1.5, z0), axis="X")
-        cylinder("ram_rod_%s%d" % (tag, k), 0.085, 1.5, "steel_brushed", (X(-0.75), -1.5, z0), axis="X")
-        cylinder("ram_collar_%s%d" % (tag, k), 0.2, 0.12, "steel_brushed", (X(0.62), -1.5, z0), axis="X")
+        cylinder("ram_socket_%s%d" % (tag, k), 0.17, 0.32, "black_coat", (X(0.58), -1.5, z0), axis="X")
+        cylinder("ram_rod_%s%d" % (tag, k), 0.085, 1.5, "steel_brushed", (X(-0.3), -1.5, z0), axis="X")
+        cylinder("ram_collar_%s%d" % (tag, k), 0.14, 0.14, "steel_brushed", (X(0.36), -1.5, z0), axis="X")
     cable("hose_%s0" % tag, [(X(0.25), -0.9, 5.5), (X(-0.15), -1.2, 4.0), (X(0.1), -1.1, 2.5), (X(0.35), -0.8, 2.25)], 0.07)
     cable("hose_%s1" % tag, [(X(0.5), -0.7, 5.5), (X(0.05), -0.95, 3.9), (X(0.3), -0.9, 2.3)], 0.05)
     # ---- collar stack: dark steel drums with a framed opening for each glass button
@@ -340,8 +341,8 @@ def build_pillar(s):
     bolts("low", [(0.12, z) for z in (-1.7, -2.3, -2.9, -3.5, -4.1, -4.7, -5.3)] + [(2.18, z) for z in (-1.7, -2.3, -2.9, -3.5)]
           + [(u, -5.48) for u in (0.6, 1.2, 1.8, 2.4, 3.0)] + [(u, -1.6) for u in (0.5, 1.0)] + [(2.6, -4.15), (3.03, -4.6)], -1.15, low)
     for k, z0 in enumerate((-2.45, -3.75)):
-        cylinder("piston_%s%d" % (tag, k), 0.13, 1.1, "steel_brushed", (X(0.1), -1.3, z0), axis="X")
-        cylinder("piston_cap_%s%d" % (tag, k), 0.2, 0.25, "black_coat", (X(0.55), -1.3, z0), axis="X")
+        cylinder("piston_%s%d" % (tag, k), 0.11, 1.3, "steel_brushed", (X(-0.2), -1.3, z0), axis="X")
+        cylinder("piston_cap_%s%d" % (tag, k), 0.19, 0.3, "black_coat", (X(0.5), -1.3, z0), axis="X")
     # cables from the pillar into the machinery under the screen
     cable("cable_%s0" % tag, [(X(2.0), -1.0, -1.45), (X(2.6), -1.05, -2.2), (X(3.1), -0.95, -2.75)], 0.07)
     cable("cable_%s1" % tag, [(X(2.1), -0.8, -1.4), (X(2.9), -0.85, -2.0), (X(3.6), -0.8, -2.62)], 0.05)
@@ -417,7 +418,7 @@ def build_keys():
         prism("key_plate_%d" % i, crect(KEY_W - 0.14, 1.0, 0.07, 0.07, 0.07, 0.07, x, zc), 0.025, "steel_face",
               y_face(zc) - 0.015, (x, zc), (-tilt, 0, 0), bevel=0.012)
         zs = KEY_CZ + 0.3
-        prism("key_slot_%d" % i, oct_(0.52, 0.12, 0.03, x, zs), 0.02, "glass_dark", y_face(zs) - 0.035, (x, zs), (-tilt, 0, 0), bevel=0.0)
+        prism("key_slot_%d" % i, oct_(0.52, 0.12, 0.03, x, zs), 0.02, "recess", y_face(zs) - 0.035, (x, zs), (-tilt, 0, 0), bevel=0.0)
         prism("key_led_%d" % i, oct_(0.38, 0.055, 0.02, x, zs), 0.02, "led_%d" % i, y_face(zs) - 0.05, (x, zs), (-tilt, 0, 0), bevel=0.0)
         anchor("key_%d" % i, x, zc, KEY_W - 0.2, 0.94, y_face(zc) - 0.04)  # the whole plate; the label sits low
     for x in (-6.55, -3.9, -1.3, 1.3, 3.9, 6.55):

@@ -84,8 +84,9 @@ func set_led(i: int, on: bool) -> void:
 	var m: StandardMaterial3D = _leds.get(i)
 	if m:
 		# a crisp green bar with a small halo, not a white blob (ACES clips high green to white)
-		m.emission_energy_multiplier = 1.4 if on else 0.0
-		m.albedo_color = Color(0.2, 1.0, 0.35) if on else Color(0.02, 0.05, 0.03)
+		m.emission = Color(0.1, 1.0, 0.22)
+		m.emission_energy_multiplier = 1.1 if on else 0.0
+		m.albedo_color = Color(0.05, 0.6, 0.15) if on else Color(0.01, 0.02, 0.015)
 
 
 ## Push key i in and let it spring back (its label anchor travels with it).
@@ -277,6 +278,12 @@ func _material(name: String) -> Material:
 			g.roughness = 0.25
 			g.metallic_specular = 0.7
 			m = g
+		"recess": # matte black hole (key LED slots)
+			var r := StandardMaterial3D.new()
+			r.albedo_color = Color(0.008, 0.009, 0.009)
+			r.roughness = 0.95
+			r.metallic_specular = 0.1
+			m = r
 		"lamp_orange", "lamp_red", "lamp_yellow", "lamp_white":
 			var e := StandardMaterial3D.new()
 			e.albedo_color = {"lamp_orange": Color(1.0, 0.5, 0.12), "lamp_red": Color(1.0, 0.15, 0.08),
@@ -289,9 +296,10 @@ func _material(name: String) -> Material:
 			var e := StandardMaterial3D.new()
 			if name.begins_with("led_"):
 				e.emission_enabled = true
-				e.emission = Color(0.25, 1.0, 0.4)
+				e.emission = Color(0.1, 1.0, 0.22)
 				e.emission_energy_multiplier = 0.0
-				e.albedo_color = Color(0.02, 0.05, 0.03)
+				e.albedo_color = Color(0.01, 0.02, 0.015)
+				e.roughness = 0.6
 				_leds[int(name.trim_prefix("led_"))] = e
 			m = e
 	_materials[name] = m

@@ -4,6 +4,7 @@ extends Control
 ## actions are not wired yet. Target look: remake/art/ui/reference/target_briefing.png.
 ## Screenshot mode: godot --path remake/game res://ui/screens/main_menu.tscn -- \
 ##   --shots <outdir> [--size <w>x<h>] [--select <key>[,<left>[,<right>]]] [--hover <left>]
+##   [--focus <node>]  (keyboard focus on e.g. Key1 or SlotR0, as if a key had been pressed)
 
 const _FACTIONS := [["DARKEN", "Of the Darken"], ["HUMAN", "Of the Humans"], ["MERC", "Of the Mercs"], ["SCORP", "Of the Scorps"]]
 # [label, status text, children]. Status texts not yet seen in the original are placeholders
@@ -307,6 +308,10 @@ func _run_shots(args: PackedStringArray) -> void:
 	var hover := _arg(args, "--hover", "")
 	if hover != "":
 		_left[int(hover)].grab_focus()
+	var focus := _arg(args, "--focus", "")
+	if focus != "":
+		_pad = true
+		(get_node("%" + focus) as Control).grab_focus()
 	await get_tree().create_timer(1.5).timeout
 	await RenderingServer.frame_post_draw
 	DirAccess.make_dir_recursive_absolute(outdir)

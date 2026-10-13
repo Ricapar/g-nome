@@ -58,8 +58,36 @@ Status: **active**
   shown only while keys/pad are in use), 3D key press travel (`MenuFrame.press_key`), UI
   sounds (`UiSounds`, synthesized by `remake/art/ui/sounds/make_sounds.py`, placeholders
   until R8). Verified by a scripted key run; not yet tried with a real pad.
+- Audit pass against the target image (2026-10-13; comparison crops in `%TEMP%\ui_audit\`).
+  Ranked gaps, biggest first, and what was done:
+  1. Bezel/header: the bezel rendered black because fully metallic flat faces only mirror the
+     dark sky behind the camera. Steel is now mostly diffuse (`base_metallic` 0.3-0.7) with
+     new `steel_bezel`/`steel_drum` materials; the bezel is a narrow grey band with big top
+     chamfers and a bright inner lip, and the 2D glass (`screen_glass.gdshader`) cuts the same
+     corners. A dark header strip with small red LED modules fills the top band (the four big
+     lamps are gone).
+  2. Keys: dark weathered face plate over the whole key with a matte-black LED slot (`recess`
+     material), white labels with a dark outline (theme `KeyButton`, label pushed down by the
+     style box's top margin), selected outline on the plate edge, thin gap lamps. The LED is a
+     saturated green bar at emission 1.1 (higher clipped to white under ACES).
+  3. Armour: matte red (`base_roughness` 1.6) whose grey texture flecks become bare steel
+     (`chip_amount` in `frame_material.gdshader`), steel rims behind the plates, bolt rows,
+     panel seams, a white wedge, vertical orange lamp strips on the inner edge, rams and
+     pistons in front of the plates, a small hazard patch, an orange indicator panel on the foot.
+  4. Screen: dark teal glass with a faint circuit grid and a chamfered inner border; the
+     chrome is a rule under the title plus readout dashes (corner brackets removed); panes
+     without ticks; bigger objective text and title.
+  5. Map: broad sandstone forms on olive-brown, fewer tan contours, a green screen tint.
+  6. Hangar: lamp strips no longer blow out; the vehicle fills the pane.
+  7. Collars in dark gunmetal; the empty slot is a deeper, less saturated blue; the under-screen
+     strip is slimmer with small pods; the status housing has a light steel rim.
+  Still off (needs new art or a model, not tuning): the vehicle is the original low-poly
+  model (R13/R16 art); the pillars have fewer layered plates, rivets and cabling than the
+  target; the map terrain is invented until R13 decodes the real map; the target's painterly
+  grime/chipping variety needs authored masks rather than a tiled CC0 set.
+- Screenshot mode gained `--focus <node>` (e.g. `--focus Key1`) to capture keyboard focus.
 - Next: user review live in Godot (feel, sounds, pad); gallery scene; router/actions (R12);
-  armour detail (panel lines, recesses) if still wanted.
+  authored grime/chip masks for the armour if the tiled look still bothers.
 - Earlier next steps: user review of the style frame; authored hi-res material maps (replace the noise);
   keyboard/gamepad focus pass; gallery scene; UI sounds; router.
 

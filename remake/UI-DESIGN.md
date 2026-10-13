@@ -23,10 +23,14 @@ original, but much more refined." Breakdown:
   the screen, small orange practical lamps (between slots and keys, under the screen, in the
   header), green light spill from the selected button.
 - **Buttons**: smoky dark glass with pale cyan text; the selected one has a neon green frame,
-  green glass and chevron markers; empty slots are glossy blue. Keys are chunky steel blocks
-  with dark faces; the selected key has a green LED, an italic label and a green outline glow.
-- **Screen**: dark teal glass; a two-tone wide title ("1-1:" white, name green); content panes
-  with thin green borders and corner ticks; objectives with yellow box bullets.
+  green glass and chevron markers; empty slots are deep blue. Keys are chunky steel blocks
+  with **dark weathered faces and white labels** below a black LED slot; the selected key has
+  a green LED, an italic label and a thin green outline along the plate edge.
+- **Screen**: dark teal glass with a faint circuit grid and a chamfered inner border; a
+  two-tone wide title ("1-1:" white, name green) over a thin rule; content panes with thin
+  green borders; objectives with yellow box bullets.
+- **Bezel and header**: a narrow grey steel band with large chamfers at the top corners and a
+  bright inner lip; above it a dark header strip with small red LED modules.
 - **Status line**: yellow ">>" chevrons and left-aligned yellow text in a recessed channel.
 
 ### How it is built
@@ -35,6 +39,9 @@ original, but much more refined." Breakdown:
   renders it live behind the UI (`MenuFrame`) with PBR materials from CC0 texture sets
   (ambientCG, fetched by `tools/fetch_cc0.py`, triplanar so no UVs), real lamps, SSAO and glow.
   It renders at the window's physical resolution; wide screens see the "wing" machinery.
+  Steel materials are mostly diffuse (metallic 0.3-0.7): a fully metallic face pointed at the
+  camera only mirrors the dark sky behind it and renders black. Paint is matte; the texture's
+  grey flecks are turned into bare-steel chips by the shader.
 - **The interactive layer is 2D**: buttons, keys, status line and screen content are Controls
   pinned every frame to anchor empties in the model (`anchor_*`, projected through the camera).
 - Vector and shader work remains for everything flat: glass faces, glows, chevrons, panes, text.

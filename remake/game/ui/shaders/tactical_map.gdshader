@@ -9,7 +9,7 @@ uniform sampler2D height : filter_linear, repeat_disable; // mission rock mask
 uniform sampler2D noise : repeat_enable, filter_linear_mipmap; // seamless fractal noise
 uniform float contours = 6.0;
 uniform float seed = 0.37;
-uniform float tint = 0.35; // green screen tint over the survey colours
+uniform float tint = 0.22; // green screen tint over the survey colours
 
 float n(vec2 p) {
 	return texture(noise, p + seed).r;
@@ -41,17 +41,17 @@ void fragment() {
 	vec2 g = vec2(h_at(uv + e.xy) - h_at(uv - e.xy), h_at(uv + e.yx) - h_at(uv - e.yx)) / (2.0 * e.x);
 	// hillshade: light from the top left, a little from above
 	vec3 nrm = normalize(vec3(-g * 0.2, 1.0));
-	float shade = clamp(dot(nrm, normalize(vec3(-0.6, -0.6, 0.55))) * 1.2 + 0.15, 0.4, 1.45);
+	float shade = clamp(dot(nrm, normalize(vec3(-0.6, -0.6, 0.55))) * 1.0 + 0.25, 0.5, 1.05);
 
-	// colour by height: dark olive valleys, khaki slopes, sandstone ridges, pale crests
+	// colour by height: olive-brown valleys, brown slopes, sandstone ridges, matte tan crests
 	float t = smoothstep(0.25, 0.95, h);
-	vec3 col = mix(vec3(0.15, 0.2, 0.12), vec3(0.3, 0.3, 0.16), smoothstep(0.0, 0.3, t));
-	col = mix(col, vec3(0.58, 0.45, 0.28), smoothstep(0.25, 0.55, t));
-	col = mix(col, vec3(0.8, 0.66, 0.48), smoothstep(0.5, 0.8, t));
-	col = mix(col, vec3(0.93, 0.86, 0.74), smoothstep(0.82, 1.0, t));
+	vec3 col = mix(vec3(0.2, 0.22, 0.14), vec3(0.36, 0.32, 0.2), smoothstep(0.0, 0.3, t));
+	col = mix(col, vec3(0.56, 0.43, 0.28), smoothstep(0.25, 0.55, t));
+	col = mix(col, vec3(0.76, 0.6, 0.44), smoothstep(0.5, 0.8, t));
+	col = mix(col, vec3(0.86, 0.76, 0.62), smoothstep(0.82, 1.0, t));
 	// ground variation: patches of scrub and bare earth
 	float scrub = n(uv * 1.2 + 0.7);
-	col *= mix(vec3(0.85, 0.95, 0.8), vec3(1.1, 1.0, 0.92), scrub);
+	col *= mix(vec3(0.88, 0.95, 0.84), vec3(1.06, 1.0, 0.94), scrub);
 	col *= shade;
 
 	// dry river beds wind through the low ground
