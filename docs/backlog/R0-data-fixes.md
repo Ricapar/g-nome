@@ -58,6 +58,10 @@ matching analysis.md sections ("Script VM", "Data tables", "Missions, units and 
 - FRME format (R4). Weapon table column map (R6). AI task system (R7).
 - Palette ranges and world texture prefixes (R9). Wave header and movie table (R8).
 - RENDER.R32 export addresses of movement, animation, weapon and AI natives (R3, R4, R6, R7).
+- Model textures taller than 128 px are stacks of 128x128 frames (found during R11): the
+  menu's ModelStage samples frame 0 via `viewer/rw_model.gd`. The model and mission viewers
+  still use the raw glTF materials (green legs on the Prowler); switch them over, and find
+  how RENDER.R32 picks the frame (team colour?).
 
 ## Plan
 1. Check bug 1 in the model viewer (`godot --path remake/game -- --shots <dir> <ids>`), then

@@ -123,7 +123,12 @@ Bitmap record: `u32 w, h, flags; i32 hot_x, hot_y; u32 resource_id`, then data.
 - flags & 0x40: rows are top-down; otherwise bottom-up (RENDER flips them).
 Texture block: `u32 0x3d|0x3e, u32 len (bytes from this word to the block end), u32
 name_len, name, bitmap record`. Textures are 128 wide (RENDER checks this), 128..512 tall,
-and often an atlas of faction colour variants (e.g. red/yellow halves). RENDER keeps a
+and often an atlas of faction colour variants (e.g. red/yellow halves). These behave as
+stacks of 128x128 frames (RenderWare 2.0 texture frames): model UVs address one frame and
+wrap inside it (V runs past 1.0 on some parts). Sampling `(u, (fract(v) + frame) / frames)`
+with frame 0 gives the red/grey Union Prowler (2583) that the original 1-1 briefing shows;
+using V as-is gives green legs. Implemented in `remake/game/viewer/rw_frame.gdshader` +
+`rw_model.gd` (used by the menu's ModelStage). Unverified: how RENDER picks the frame (team?). RENDER keeps a
 500-entry texture table keyed by basename (`FUN_100039cf`; lookup `FUN_10003fcb`).
 Pixel index i uses palette entry i-10 of a 236-entry palette (indices 0..9 = system colours).
 

@@ -159,7 +159,7 @@ offset_top = 2.0
 offset_right = -2.0
 offset_bottom = -2.0
 script = ExtResource("6_stage")
-model_id = 3072
+model_id = 2583
 
 [node name="Objective" type="HBoxContainer" parent="Screen/BriefingPage"]
 layout_mode = 1

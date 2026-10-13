@@ -123,26 +123,35 @@ func _to_local(p: Vector2) -> Vector2:
 
 
 func _draw() -> void:
-	var s := minf(size.x, size.y) / 26.0
-	for i in _waypoints.size():
-		var p := _to_local(_waypoints[i])
-		draw_arc(p, s * 0.55, 0, TAU, 24, GREEN, 2.0, true)
-		draw_circle(p, s * 0.18, GREEN)
-	for h in _hostiles:
-		var p := _to_local(h)
-		var k := s * 0.55
-		draw_line(p + Vector2(-k, -k), p + Vector2(k, k), YELLOW, 3.0, true)
-		draw_line(p + Vector2(-k, k), p + Vector2(k, -k), YELLOW, 3.0, true)
-		draw_arc(p, k * 1.25, 0, TAU, 24, Color(YELLOW, 0.6), 1.5, true)
-	# player start: a double chevron along the start heading
-	var at := _to_local(_start)
-	var dir := Vector2(sin(deg_to_rad(_start_heading)), cos(deg_to_rad(_start_heading))) # game +z forward at heading 0
-	var fwd := Vector2(dir.x, dir.y) # local y grows with game z (down = +z)
-	var side := Vector2(-fwd.y, fwd.x)
-	for k in 2:
-		var tip := at + fwd * s * (0.7 + 0.55 * k)
-		draw_colored_polygon(PackedVector2Array([tip, tip - fwd * s * 0.6 + side * s * 0.5,
-			tip - fwd * s * 0.35, tip - fwd * s * 0.6 - side * s * 0.5]), GREEN)
+	var s := minf(size.x, size.y) / 24.0
+	# each marker twice: a dark halo first so it reads on bright terrain and cloud
+	for pass_i in 2:
+		var halo := pass_i == 0
+		var green := Color(0, 0, 0, 0.55) if halo else GREEN
+		var yellow := Color(0, 0, 0, 0.55) if halo else YELLOW
+		var wide := 3.0 if halo else 0.0
+		for i in _waypoints.size():
+			var p := _to_local(_waypoints[i])
+			draw_arc(p, s * 0.55, 0, TAU, 24, green, 2.0 + wide, true)
+			draw_circle(p, s * 0.18 + wide * 0.5, green)
+		for h in _hostiles:
+			var p := _to_local(h)
+			var k := s * 0.5
+			draw_line(p + Vector2(-k, -k), p + Vector2(k, k), yellow, 3.5 + wide, true)
+			draw_line(p + Vector2(-k, k), p + Vector2(k, -k), yellow, 3.5 + wide, true)
+		# player start: a double chevron along the start heading
+		var at := _to_local(_start)
+		var fwd := Vector2(sin(deg_to_rad(_start_heading)), cos(deg_to_rad(_start_heading))) # local y grows with game z
+		var side := Vector2(-fwd.y, fwd.x)
+		for k in 2:
+			var tip := at + fwd * s * (0.5 + 0.6 * k)
+			var pts := PackedVector2Array([tip, tip - fwd * s * 0.7 + side * s * 0.6,
+				tip - fwd * s * 0.4, tip - fwd * s * 0.7 - side * s * 0.6])
+			if halo:
+				pts.append(pts[0])
+				draw_polyline(pts, green, 4.0, true)
+			else:
+				draw_colored_polygon(pts, green)
 
 
 func _process(_dt: float) -> void:
