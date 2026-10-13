@@ -139,10 +139,11 @@ func _is_nav(e: InputEvent) -> bool:
 
 
 func _back() -> void:
-	var f := get_viewport().gui_get_focus_owner()
-	if f in _right and _left_index >= 0:
+	# typed arrays reject lookups of other types, so check the class first
+	var f := get_viewport().gui_get_focus_owner() as GlassButton
+	if f and _right.has(f) and _left_index >= 0:
 		_left[_left_index].grab_focus()
-	elif (f in _right or f in _left) and _key_index >= 0:
+	elif f and _key_index >= 0:
 		_keys[_key_index].grab_focus()
 	else:
 		return
