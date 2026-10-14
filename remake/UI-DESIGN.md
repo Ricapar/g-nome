@@ -27,7 +27,7 @@ original, but much more refined." Breakdown:
   in perspective**: the tray bows toward the viewer, the outer keys splay and show their
   sides, each key is a chunky block with a chamfered steel frame, a leaning worn face with a
   white label below a black LED slot, and a steel ledge runs under the bank; the selected key
-  has a green LED, an italic label and a thin green outline along the face's edge.
+  has a green LED, an upright, brighter label (italic was tried and dropped: it looked silly on the angled keys) and a thin green outline along the face's edge.
 - **Screen**: dark teal glass with a faint circuit grid and a chamfered inner border; a
   two-tone wide title ("1-1:" white, name green) over a thin rule; content panes with thin
   green borders; objectives with yellow box bullets.

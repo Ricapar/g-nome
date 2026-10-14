@@ -4,7 +4,7 @@ extends Button
 ## A key on the bottom bar. The key itself is 3D (MenuFrame); this is its face plate's hit area
 ## and label (the label sits low on the plate, below the LED slot; see theme "KeyButton").
 ## The face is seen in perspective, so `face` holds its four projected corners (local pixels)
-## and the outlines follow that trapezoid. Selected keys get an italic label and a thin green
+## and the outlines follow that trapezoid. Selected keys get a brighter, larger label and a thin green
 ## outline along the plate's edge; the green LED is lit by the menu. Keyboard/gamepad focus
 ## and hover show a faint pale outline.
 

@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=15 format=3]
+[gd_resource type="Theme" load_steps=14 format=3]
 
 [ext_resource type="FontFile" path="res://ui/fonts/Saira-VF.ttf" id="1_saira"]
 [ext_resource type="FontFile" path="res://ui/fonts/ShareTechMono-Regular.ttf" id="2_mono"]
@@ -23,12 +23,6 @@ spacing_glyph = 1
 [sub_resource type="FontVariation" id="key"]
 base_font = ExtResource("1_saira")
 variation_opentype = {2003072104: 112, 2003265652: 800}
-spacing_glyph = 2
-
-[sub_resource type="FontVariation" id="key_italic"]
-base_font = ExtResource("1_saira")
-variation_opentype = {2003072104: 112, 2003265652: 800}
-variation_transform = Transform2D(1, 0, 0.22, 1, 0, 0)
 spacing_glyph = 2
 
 [sub_resource type="FontVariation" id="screen_title"]
@@ -134,7 +128,6 @@ KeyButtonSelected/constants/outline_size = 4
 KeyButtonSelected/colors/font_pressed_color = Color(0.95, 0.98, 0.95, 1)
 KeyButtonSelected/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
 KeyButtonSelected/font_sizes/font_size = 28
-KeyButtonSelected/fonts/font = SubResource("key_italic")
 ScreenTitleWhite/base_type = &"Label"
 ScreenTitleWhite/colors/font_color = Color(0.95, 0.97, 0.97, 1)
 ScreenTitleWhite/font_sizes/font_size = 50
