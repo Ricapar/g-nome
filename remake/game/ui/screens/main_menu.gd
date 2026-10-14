@@ -5,6 +5,7 @@ extends Control
 ## Screenshot mode: godot --path remake/game res://ui/screens/main_menu.tscn -- \
 ##   --shots <outdir> [--size <w>x<h>] [--select <key>[,<left>[,<right>]]] [--hover <left>]
 ##   [--focus <node>]  (keyboard focus on e.g. Key1 or SlotR0, as if a key had been pressed)
+##   [--press <key>]   (capture key <key> mid-travel, 40 ms into its press)
 
 const _FACTIONS := [["DARKEN", "Of the Darken"], ["HUMAN", "Of the Humans"], ["MERC", "Of the Mercs"], ["SCORP", "Of the Scorps"]]
 # [label, status text, children]. Status texts not yet seen in the original are placeholders
@@ -94,6 +95,11 @@ func _layout() -> void:
 		_place(_right[i], "slot_R%d" % i, k)
 	for i in _keys.size():
 		_place(_keys[i], "key_%d" % i, k)
+		# the splayed key faces are trapezoids on screen; the outline follows them
+		var q := _frame.anchor_quad("key_%d" % i)
+		for j in q.size():
+			q[j] = q[j] * k - _keys[i].position
+		_keys[i].face = q
 	_place(_status, "status", k)
 	_place(_screen, "screen", k)
 
@@ -313,7 +319,13 @@ func _run_shots(args: PackedStringArray) -> void:
 	if focus != "":
 		_pad = true
 		(get_node("%" + focus) as Control).grab_focus()
-	await get_tree().create_timer(1.5).timeout
+	await get_tree().create_timer(1.4).timeout
+	var press := _arg(args, "--press", "")
+	if press != "":
+		_frame.press_key(int(press))
+		await get_tree().create_timer(0.04).timeout
+	else:
+		await get_tree().create_timer(0.1).timeout
 	await RenderingServer.frame_post_draw
 	DirAccess.make_dir_recursive_absolute(outdir)
 	var img := get_viewport().get_texture().get_image()

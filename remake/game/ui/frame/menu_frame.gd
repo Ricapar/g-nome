@@ -12,13 +12,14 @@ const SHADER := preload("res://ui/frame/frame_material.gdshader")
 const CC0 := "res://art_cc0/%s/%s_2K-JPG_%s.jpg"
 const HDRI := "res://art_cc0/hdri/studio_small_09_1k.hdr"
 const EMBLEM := preload("res://ui/frame/emblem.svg")
+const NOISE := preload("res://ui/materials/grime_noise.tres")
 const SAIRA := preload("res://ui/fonts/Saira-VF.ttf")
 const STENCILS := {"text_L": "UIA-07", "text_R": "BAY 3"}
 const FRAME_HEIGHT := 11.3 # model units (1 = 100 design px); a margin so the pillars nearer the camera fit
 const FOV := 24.0
-const KEY_TRAVEL := Vector3(0, -0.015, -0.09) # into the bar, a little down the slope
+const KEY_TRAVEL := Vector3(0, -0.02, -0.09) # in the key's own frame (its parts sit under key_root_i): into the bar, a little down
 
-static var _KEY_PART := RegEx.create_from_string("^(?:key_(?:body|plate|led|slot)|anchor_key)_([0-9])$")
+static var _KEY_PART := RegEx.create_from_string("^(?:key_(?:body|plate|led|slot|frame)|anchor_key)_([0-9])$")
 
 var camera := Camera3D.new()
 var _anchors := {}
@@ -63,16 +64,29 @@ func _ready() -> void:
 	camera.current = true
 
 
-## Rect of anchor `name` in this viewport's pixels.
-func anchor_rect(name: String) -> Rect2:
+## Corners of anchor `name` in this viewport's pixels (top-left, top-right, bottom-right,
+## bottom-left): the empty's unit square (its scale x/y is the rect size), turned by any parent,
+## e.g. the splayed keys, so it is a trapezoid on screen.
+func anchor_quad(name: String) -> PackedVector2Array:
 	var a: Node3D = _anchors.get(name)
 	if a == null:
+		return PackedVector2Array()
+	var t := a.global_transform
+	var q := PackedVector2Array()
+	for c in [Vector3(-0.5, 0.5, 0), Vector3(0.5, 0.5, 0), Vector3(0.5, -0.5, 0), Vector3(-0.5, -0.5, 0)]:
+		q.append(camera.unproject_position(t * c))
+	return q
+
+
+## Screen bounding box of anchor `name`.
+func anchor_rect(name: String) -> Rect2:
+	var q := anchor_quad(name)
+	if q.is_empty():
 		return Rect2()
-	var p := a.global_position
-	var half := Vector3(a.scale.x, a.scale.y, 0) * 0.5
-	var tl := camera.unproject_position(p + Vector3(-half.x, half.y, 0))
-	var br := camera.unproject_position(p + Vector3(half.x, -half.y, 0))
-	return Rect2(tl, br - tl)
+	var r := Rect2(q[0], Vector2.ZERO)
+	for i in range(1, 4):
+		r = r.expand(q[i])
+	return r
 
 
 func has_anchor(name: String) -> bool:
@@ -89,7 +103,8 @@ func set_led(i: int, on: bool) -> void:
 		m.albedo_color = Color(0.05, 0.6, 0.15) if on else Color(0.01, 0.02, 0.015)
 
 
-## Push key i in and let it spring back (its label anchor travels with it).
+## Push key i in and let it spring back (its label anchor travels with it). The parts are
+## children of the key's root empty, so `position` is already in the key's turned frame.
 func press_key(i: int) -> void:
 	for part: Array in _key_parts.get(i, []):
 		var n: Node3D = part[0]
@@ -167,6 +182,16 @@ func _build_environment() -> void:
 	screen.light_specular = 0.2
 	screen.omni_range = 8.0
 	add_child(screen)
+	# a frontal fill for the key bank: its keys splay outward, so the side key light would
+	# otherwise grade them from bright on the left to dark on the right
+	var bank := OmniLight3D.new()
+	bank.position = Vector3(2.4, -4.4, 4.5) # right of centre: the key light comes from the left
+	bank.light_color = Color(1.0, 0.97, 0.92)
+	bank.light_energy = 0.6
+	bank.light_specular = 0.15
+	bank.omni_range = 9.0
+	bank.omni_attenuation = 1.2
+	add_child(bank)
 
 
 ## Painted insignia projected onto the armour (the empty's scale x/y = width/height).
@@ -239,27 +264,35 @@ func _material(name: String) -> Material:
 	# Steel is mostly diffuse here (metallic well below 1): a fully metallic flat face only mirrors
 	# the dark sky behind the camera and renders black, while the target's steel reads as grey.
 	match name:
-		"red_paint": # matte chipped paint; the map's grey flecks become bare steel (chip_amount)
-			m = _layered("PaintedMetal004", 0.32, Color(0.3, 0.085, 0.075), "Metal009", Color(0.6, 0.6, 0.62),
-				true, {"base_roughness": 1.6, "chip_amount": 1.0, "wear_roughness": 0.7, "grime_amount": 0.8})
+		"red_paint": # matte chipped paint; the map's grey flecks become bare steel (chip_amount),
+			# plus blotches worn to primer, specks and rust so no two plates look alike
+			m = _layered("PaintedMetal004", 0.32, Color(0.34, 0.095, 0.085), "Metal009", Color(0.6, 0.58, 0.58),
+				true, {"base_roughness": 1.6, "chip_amount": 1.0, "wear_roughness": 0.7, "grime_amount": 0.75,
+				"patch_amount": 0.6, "speckle_amount": 0.5, "rust_amount": 0.45})
 		"white_paint":
 			m = _layered("PaintedMetal004", 0.32, Color(0.5, 0.5, 0.49), "Metal009", Color(0.62, 0.62, 0.64), false,
-				{"base_metallic": 0.0, "base_roughness": 1.6, "wear_roughness": 0.7})
+				{"base_metallic": 0.0, "base_roughness": 1.6, "wear_roughness": 0.7, "patch_amount": 0.5,
+				"speckle_amount": 0.5, "rust_amount": 0.5, "rust_tint": Color(0.3, 0.16, 0.07)})
 		"steel_dark": # frames, bezel, trays: dark grey scratched steel
 			m = _layered("Metal038", 0.22, Color(0.4, 0.41, 0.44), "Metal009", Color(0.8, 0.8, 0.82), true,
-				{"base_metallic": 0.35, "base_roughness": 1.3, "normal_strength": 0.5, "wear_roughness": 0.6})
-		"steel_bezel": # lighter steel: screen bezel band, status housing, clips
+				{"base_metallic": 0.35, "base_roughness": 1.3, "normal_strength": 0.5, "wear_roughness": 0.6,
+				"speckle_amount": 0.3})
+		"steel_bezel": # lighter steel: screen bezel band, status housing, clips, key frames
 			m = _layered("Metal009", 0.4, Color(0.36, 0.37, 0.39), "Metal009", Color(0.85, 0.85, 0.87), true,
-				{"base_metallic": 0.5, "base_roughness": 1.2, "normal_strength": 0.6, "grime_amount": 0.65})
+				{"base_metallic": 0.5, "base_roughness": 1.2, "normal_strength": 0.6, "grime_amount": 0.65,
+				"speckle_amount": 0.3})
 		"steel_drum": # collar drums: dark gunmetal with brushing
 			m = _layered("Metal009", 0.5, Color(0.3, 0.3, 0.3), "Metal009", Color(0.8, 0.8, 0.8), true,
 				{"base_metallic": 0.7, "base_roughness": 1.15})
 		"steel_brushed": # rods, bolts, rims: bright brushed steel
 			m = _layered("Metal009", 0.45, Color(0.5, 0.51, 0.53), "Metal009", Color(0.95, 0.95, 0.95), true,
 				{"base_metallic": 0.85, "base_roughness": 1.1})
-		"steel_face": # key faces: dark weathered steel, white labels on top
-			m = _layered("Metal038", 0.5, Color(0.34, 0.34, 0.35), "Metal009", Color(0.75, 0.75, 0.77), true,
-				{"base_metallic": 0.3, "base_roughness": 1.3, "normal_strength": 0.6, "grime_amount": 0.6})
+		"steel_face": # key faces: worn grey steel with bright chips and scratches, white labels on top.
+			# Low metallic and high roughness so the turned keys don't each reflect a different part
+			# of the HDRI and come out at different brightnesses.
+			m = _layered("Metal038", 0.5, Color(0.33, 0.33, 0.34), "Metal009", Color(0.6, 0.6, 0.62), true,
+				{"base_metallic": 0.15, "base_roughness": 1.6, "normal_strength": 0.6, "grime_amount": 0.5,
+				"speckle_amount": 0.5, "rust_amount": 0.2, "rust_tint": Color(0.2, 0.14, 0.09)})
 		"black_coat":
 			m = _layered("Metal027", 0.5, Color(0.4, 0.4, 0.42), "Metal038", Color(0.7, 0.7, 0.7), true,
 				{"base_metallic": 0.2})
@@ -318,6 +351,7 @@ func _layered(base: String, scale: float, tint: Color, wear: String, wear_tint: 
 	var m := ShaderMaterial.new()
 	m.shader = SHADER
 	m.set_shader_parameter("scale", scale)
+	m.set_shader_parameter("noise", NOISE)
 	m.set_shader_parameter("base_tint", tint)
 	m.set_shader_parameter("use_base_albedo", use_albedo)
 	m.set_shader_parameter("base_albedo", _tex(base, "Color"))

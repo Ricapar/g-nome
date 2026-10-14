@@ -86,8 +86,31 @@ Status: **active**
   target; the map terrain is invented until R13 decodes the real map; the target's painterly
   grime/chipping variety needs authored masks rather than a tiled CC0 set.
 - Screenshot mode gained `--focus <node>` (e.g. `--focus Key1`) to capture keyboard focus.
-- Next: user review live in Godot (feel, sounds, pad); gallery scene; router/actions (R12);
-  authored grime/chip masks for the armour if the tiled look still bothers.
+- Audit pass 2 (2026-10-14, user's pick from the "still off" list: armour and the key bank;
+  mech and map terrain stay as they are, future revisions):
+  - **Key bank in perspective** (`build_keys` in `build_frame.py`): the tray bows toward the
+    viewer (`KEY_ARC_R`); each key sits on that arc under an empty `key_root_i`, turned with
+    it, so the outer keys splay and show their outer sides. A key is a chunky block whose
+    label face leans back with a lower chamfer, a chamfered `steel_bezel` frame around a
+    worn face plate, a matte LED slot, and a steel ledge runs along the bank's bottom edge.
+    `MenuFrame.anchor_quad()` projects the turned face as a trapezoid; `anchor_rect()` is
+    its bounding box (hit area and label), and `KeyButton.face` draws the selected/focus
+    outline along the trapezoid. The press tween is unchanged: the parts are children of the
+    key's root, so `KEY_TRAVEL` is already in the key's own frame (`--press <key>` in the
+    screenshot mode captures it mid-travel). A frontal fill light evens out the splayed
+    faces, and `steel_face` is low-metallic/rough so the turned keys don't each reflect a
+    different part of the HDRI.
+  - **Armour**: `frame_material.gdshader` gained painterly wear from the seamless fbm noise
+    (`patch_amount` blotches worn to bare metal, `speckle_amount` chips/dirt specks,
+    `rust_amount`/`rust_tint` staining, dirt in the noise's hollows), sampled at three scales
+    with offsets so no two plates repeat. `build_pillar` adds raised sub-plates with steel
+    rims (panel under the top plate, the foot plate), bolt rows along every edge, panel
+    seams, ram/piston socket plates with four rivets, hex nuts, hoses over the outer edge,
+    thicker cable runs beside the bezel, and stronger plate curvature (drum-like shading).
+  - Still off: the target's rams are larger with heavier chrome collars; the hoses in the
+    target are braided with fittings; its paint has broader value variation (lighter
+    worn areas) than one tint plus procedural wear gives. All tuning, no blockers.
+- Next: user review live in Godot (feel, sounds, pad); gallery scene; router/actions (R12).
 - Earlier next steps: user review of the style frame; authored hi-res material maps (replace the noise);
   keyboard/gamepad focus pass; gallery scene; UI sounds; router.
 

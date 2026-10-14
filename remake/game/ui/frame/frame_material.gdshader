@@ -23,6 +23,15 @@ uniform float grime_amount = 0.55;
 // paint chips: where the base albedo loses its saturation (the grey flecks in a painted-metal
 // map) the wear layer shows through, so chipped paint reads as bare steel, not dark paint
 uniform float chip_amount = 0.0;
+// painterly variety on top of the tiled set, from a seamless fbm noise sampled at three scales
+// with different offsets (so no two plates repeat): blotches of paint worn to bare metal,
+// fine chips and dirt specks, and rust staining where the wear is about to break through
+// (same sampler settings as the maps above: tri() takes them all through one parameter)
+uniform sampler2D noise : filter_linear_mipmap_anisotropic, repeat_enable, hint_default_white;
+uniform float patch_amount = 0.0;
+uniform float speckle_amount = 0.0;
+uniform float rust_amount = 0.0;
+uniform vec4 rust_tint : source_color = vec4(0.36, 0.17, 0.06, 1.0);
 
 varying vec3 wpos;
 varying vec3 wnrm;
@@ -67,11 +76,26 @@ void fragment() {
 	float edge = COLOR.r * wear_amount;
 	float wear = smoothstep(0.45, 0.6, edge + (breakup - 0.5) * 0.7) * step(0.02, edge);
 	wear = max(wear, chip);
+	// painterly wear: big blotches (more likely near edges), fine specks, rust around both
+	float fbm_big = tri(noise, p * 0.2 + 1.7, w).r;
+	float fbm_mid = tri(noise, p * 1.1 + 0.4, w).r;
+	float fbm_fine = tri(noise, p * 4.6 + 2.9, w).r;
+	// blotches: large, soft, ragged at the rim (the mid noise eats into them), more near edges
+	float blot = fbm_big * 0.55 + fbm_mid * 0.3 + COLOR.r * 0.3;
+	float patch = smoothstep(0.58, 0.66, blot) * smoothstep(0.3, 0.42, fbm_fine) * patch_amount;
+	float speck = smoothstep(0.65, 0.7, fbm_fine) * smoothstep(0.35, 0.5, fbm_mid) * speckle_amount;
+	wear = max(wear, max(patch, speck));
+	float rust = smoothstep(0.52, 0.6, blot) * (1.0 - wear) * rust_amount
+		+ smoothstep(0.6, 0.65, fbm_fine) * smoothstep(0.5, 0.6, fbm_mid) * rust_amount * 0.5;
 	vec3 bare = tri(wear_albedo, p * 1.6, w).rgb * wear_tint.rgb;
+	albedo = mix(albedo, rust_tint.rgb, clamp(rust, 0.0, 1.0) * 0.7);
 	albedo = mix(albedo, bare, wear);
 	rough = mix(rough, tri(wear_rough, p * 1.6, w).r * wear_roughness, wear);
+	rough = mix(rough, 1.0, clamp(rust, 0.0, 1.0) * 0.5);
 	metal = mix(metal, 1.0, wear);
 	float grime = COLOR.g * grime_amount * (0.6 + 0.8 * breakup);
+	// dirt also gathers in the noise's dark hollows, so the grime is not only in the seams
+	grime += (1.0 - smoothstep(0.3, 0.45, fbm_mid)) * grime_amount * 0.35;
 	albedo *= 1.0 - clamp(grime, 0.0, 0.85);
 	rough = mix(rough, 1.0, grime * 0.5);
 
