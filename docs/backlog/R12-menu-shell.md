@@ -29,6 +29,10 @@ briefing stub (or the R5 sandbox once it exists).
 - Intro: DREAM.SMK via `script_7(2, 11)`; G-NOME.SMK / NEWS / WILKINS / CREDITS are played by
   other scripts (R8 "Smacker movies"). Credits = `script_7(3, 8390)`.
 - Exit shows advert bitmap 2396 before quitting (R8 notes). The remake can drop or replace it.
+- Sounds (R8, `UiSounds` ids, files in `_import/audio/`): `quit` (wave 131) when Escape on the
+  main menu opens the exit confirm (user approved this sound), `denied` (74) for an action
+  that isn't available (e.g. SAVE outside a mission), `toggle` (75) for option toggles,
+  `ambience` (8398, already playing). Hover tick stays (user's choice).
 
 ## Plan
 1. **Data**: load `ui_menus.json` (R10) into a menu model; keep labels as `tr()` keys. Define

@@ -110,7 +110,11 @@ Status: **active**
   - Still off: the target's rams are larger with heavier chrome collars; the hoses in the
     target are braided with fittings; its paint has broader value variation (lighter
     worn areas) than one tint plus procedural wear gives. All tuning, no blockers.
-- Next: user review live in Godot (feel, sounds, pad); gallery scene; router/actions (R12).
+- Sounds (2026-10-14, user signed off): the original menu waves are used (R8: 8403 key, 8404
+  slot, 8398 menu loop; Escape replays the slot/key sound like the original). Hover keeps our
+  synthesized tick on purpose: the original is silent there, but the user likes it. Selected
+  key label is upright (italic looked wrong on the angled keys). Closed for now.
+- Next: gallery scene; router/actions (R12); test with a real pad.
 - Earlier next steps: user review of the style frame; authored hi-res material maps (replace the noise);
   keyboard/gamepad focus pass; gallery scene; UI sounds; router.
 
