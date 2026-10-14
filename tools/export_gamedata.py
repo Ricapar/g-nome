@@ -52,11 +52,14 @@ def missions(strs):
 
 MISSION_TABLE = 6984   # rows: [index, array, type16, main script, array, n]
 UNIT_TABLE = 5843      # rows: [template, init script, class, category, variant]
+# 161 = treaded armoured support, 181/182 = hovercraft (R0, 2026-10-14: the 161 rows have the
+# tread models with ?tl1* textures and the codex treaded stats; 181/182 the hover skirt models,
+# ?hl2* textures and hovercraft stats; an earlier guess had them the other way round)
 CATEGORY = {141: "Sentry HAWC", 142: "Tactical Defense HAWC", 143: "Cruiser HAWC",
-            144: "Heavy Assault HAWC", 161: "Hovercraft", 181: "Armored Support Vehicle",
-            182: "Armored Support Vehicle", 22: "Infantry", 23: "Infantry", 24: "Infantry"}
+            144: "Heavy Assault HAWC", 161: "Armored Support Vehicle", 181: "Hovercraft",
+            182: "Hovercraft", 22: "Infantry", 23: "Infantry", 24: "Infantry"}
 CODEX_MATCH = {141: "Sentry", 142: "Tactical", 143: "Cruiser", 144: "Multipedal Assault",
-               161: "Airborne", 181: "Armored Support", 182: "Armored Support"}
+               161: "Armored Support", 181: "Airborne", 182: "Airborne"}
 # catalogue rows 0-23 are the four factions' vehicles + infantry, in this order
 FACTION_ROWS = [("Union", range(0, 6)), ("Darken", range(6, 11)), ("Merc", range(11, 18)),
                 ("Scorp", range(18, 24))]
@@ -202,11 +205,16 @@ def main():
         text = script_calls(d, keys, ents, row[3], names, depth=1)
         world = re.findall(r"script_2513\((\d+)\)", text)
         layout = re.findall(r"script_2523\(\d+, (\d+),", text)
-        bounds = re.findall(r"script_2515\(([^)]*)\)", text)
+        # script_2515(xmax, xmin, zmax, zmin) -> G1833..G1836; the listing prints negatives
+        # as "-(n)", so match whole lines and parse each argument
+        bounds = re.findall(r"script_2515\((.*)\)$", text, re.M)
+        if bounds:
+            bounds = [-int(n) if neg else int(n)
+                      for neg, n in re.findall(r"(-\()?(\d+)", bounds[0])]
         mrows.append({"table_row": r, "index": row[0], "main_script": row[3],
                       "world_row": int(world[0]) if world else None,
                       "layout_array": int(layout[0]) if layout else None,
-                      "bounds": bounds[0] if bounds else None, "extra": [row[1], row[2], row[4], row[5]]})
+                      "bounds": bounds or None, "extra": [row[1], row[2], row[4], row[5]]})
     for m, row in zip(ms, mrows):  # table rows 1..22 = campaign missions in order
         m.update(row)
     dump("missions.json", ms)

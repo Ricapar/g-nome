@@ -242,6 +242,8 @@ Task scripts 2016-2031. Names are hypotheses from reading the code:
 - **R5** (sandbox) hosts the port. **R1** fixes heading/handedness for steering.
 
 ## Notes to fold into analysis.md
+Folded in by R0 (2026-10-14; analysis.md "Gameplay systems" → AI, plus the corrections in
+the unit-catalogue bullets). Kept here for reference:
 - **Correction:** props 72/75/93/130 are *not* AI scripts. In 3119/3177: 72 = a type-20
   sprite (it references a type-1 bitmap, likely the cockpit overlay), 75 = a ViewportCrop
   script, 93 = an array (14 x 8 for the Ogre), 130 = a LinkModel script. They look

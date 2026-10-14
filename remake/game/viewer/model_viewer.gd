@@ -94,6 +94,7 @@ func _load(name: String) -> void:
 		_info.text = "failed to load " + name
 		return
 	_model = doc.generate_scene(state)
+	RwModel.apply_frames(_model) # frame 0 of stacked textures (normal paint), not the whole stack
 	add_child(_model)
 	_apply_view_options()
 	var aabb := _aabb(_model)

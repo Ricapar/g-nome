@@ -4,7 +4,7 @@ Bitmap record (sprites = 7L type 1, and the body of a texture block in type 2):
   u32 width, u32 height, u32 flags, i32 hotspot_x, i32 hotspot_y, u32 resource_id
   then u16 row_offsets[height] and the pixel data.
 flags 0x80 = RLE (decoded by RTLIB FUN_100480d0); otherwise the data is in the chunked
-LZW format of DecompressBitmapData (not implemented: not used by any asset seen so far).
+LZW format of DecompressBitmapData (`decompress_chunks`; 72 of the 1240 sprites use it).
 flags 0x40 = rows stored top-down; when clear, RENDER.R32 flips the rows (bottom-up).
 
 RLE, per row, until a 0 byte:

@@ -179,13 +179,6 @@ loader `FUN_100043f0` (`docs/analysis.md` "Object templates"). RTLIB32 has no FR
 - Feeds R5 (sandbox: walk as soldier, drive a HAWC) and R7 (AI posture changes).
 
 ## Notes to fold into analysis.md
-- The FRME format, frame-major order, part = tag−1, parent-relative matrices with scale, and
-  the 4733 anomaly (above).
-- **Correction:** the "Missions, units and layouts" section says "Template props[1..7] = the
-  same model in 7 team colours". The scripts show props 1/4/7 = LOD0/1/2 (to obj props
-  79/80/81, via script 2146) and props 2,3,5,6 = paint variants of LOD0/LOD1 (Prowler texture
-  sets `a`/`w`/`s`).
-- Object props: 12 target speed (clamped by 35/36), 34 velocity forward, 79/80/81 LOD models,
-  92 current LOD, 39 linked model, 99 rest FRME, 55..57 model dimensions. Also
-  `animationSetupProps(12, 33, 15)`.
-- The RENDER.R32 animation export VAs and the FRME magic sites listed above.
+Folded in by R0 (2026-10-14): FRME format (sizes re-checked: 331/332, anomaly 4733), the
+template-props correction, the LOD props and `animationSetupProps`. Still to add: the
+decompiled runtime semantics (n/a/b, triggers, frame rate) once step 2 is done.

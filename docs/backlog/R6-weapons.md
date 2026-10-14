@@ -181,14 +181,10 @@ party = 2 Ogre (3108 → 3119: RAID ×2, CHUM 25) and 3 Minotaur (3165 → 3177:
   wave exporters for the final look. They're not needed for the numbers.
 
 ## Notes to fold into analysis.md
-- The array 1281 column map, the weapon id → name table (script 1716, key-4 offsets `0x8000|off`),
-  the mount array layout (1282) and the callback table `G1861` (script 2564).
-- **Catalogue categories 161 vs 181/182 look swapped.** In all four factions, the category-161
-  rows (labelled hovercraft) mount the codex *armoured support* loadout and stats, and the
-  181/182 rows mount the *hovercraft* ones. Examples: row 3 (2762 → 2775) sets 20/1900 and
-  ARC-M + 3cREAP = Rapier; row 16 (3329 → 3342) = Legionnaire-like; row 15 (3291 → 3304) sets
-  18/1400 = Razor. So `CATEGORY`/`CODEX_MATCH` in `export_gamedata.py` (and the analysis.md list)
-  probably have 161 and 181/182 reversed, which mis-joins `units.json`. Check against the models.
+Folded in by R0 (2026-10-14; analysis.md "Gameplay systems" → Weapons): column map, id →
+name table, mounts, callbacks, damage scripts, sector grid.
+- ~~Catalogue categories 161 vs 181/182 look swapped.~~ Confirmed and fixed in R0
+  (2026-10-14). The id → name table above was checked against all 24 loadouts in the process.
 - Script loadouts differ from the codex in a few places: Razor ammo 500/510 vs codex 100/110,
   Legionnaire zWASP vs codex FLECH, Scorpion has no HSSO, and some stat-B values differ
   (e.g. 2805: 1000 vs codex 800). Scripts are authoritative for gameplay.

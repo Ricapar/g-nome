@@ -197,6 +197,9 @@ E,1203,40115,0x0124...,,,,,,,,,,,player=0x0124... prev=0x0123abcd
   later). The struct offsets found here are shared with R3.
 
 ## Notes to fold into analysis.md
+Folded in by R0 (2026-10-14): G973, the object list globals (confirmed by decompiling
+`FUN_10006446`, which also gave the position floats at `+0xc/+0x10/+0x14`), the RWL20
+pointers. The native call path below is still only here:
 - RTLIB native call path `FUN_10009b6c` → `ExternalCall(fn, ctx, args, nargs)` (table offsets
   above). Natives are cdecl with ctx first.
 - G973 = player object; script 2243 = commandeer (G1826 = previous body); script 1728 =

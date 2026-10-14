@@ -14,8 +14,9 @@ It runs alongside the gameplay track. R11 (design system) can start any time; R1
 
 Recommended order (gameplay): R1 → R0 → R2 → R3 → R5 → R4 → R6 → R7. R8 and R9 can be slotted in
 anywhere.
-- R0 fixes data bugs that R3, R5 and R6 rely on, notably swapped vehicle categories in
-  `units.json`.
+- R0 (done 2026-10-14) fixed the data bugs R3, R5 and R6 rely on (swapped vehicle categories,
+  truncated bounds) and checked the specs' claims against the data; the verified facts are in
+  `docs/analysis.md` "Gameplay systems".
 - R4 comes after R5 if R3 confirms that movement is parameter-driven, as the R3 and R4
   research suggests. Otherwise it comes before R5.
 - R2 can swap with R1: its telemetry gives exact numbers to confirm R1's fix. R1's
@@ -23,7 +24,7 @@ anywhere.
 
 | ID | Item | Spec | Status |
 |---|---|---|---|
-| R0 | Fix exporter data bugs (category swap, bounds) and fold spec findings into analysis.md | [R0-data-fixes.md](backlog/R0-data-fixes.md) | todo |
+| R0 | Fix exporter data bugs (category swap, bounds) and fold spec findings into analysis.md | [R0-data-fixes.md](backlog/R0-data-fixes.md) | done |
 | R1 | Fix mission viewer orientation against the original (heading/handedness) | [R1-orientation.md](backlog/R1-orientation.md) | done |
 | R2 | Telemetry hook: log player/entity state per tick from the original game | [R2-telemetry.md](backlog/R2-telemetry.md) | todo |
 | R3 | Decode HAWC and soldier movement in RENDER.R32 and the unit scripts | [R3-movement.md](backlog/R3-movement.md) | todo |

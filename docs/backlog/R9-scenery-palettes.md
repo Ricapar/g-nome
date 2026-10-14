@@ -184,6 +184,8 @@ windowed screenshots of the original, with no desert-palette colours on world-1.
   ranges).
 
 ## Notes to fold into analysis.md
+Folded in by R0 (2026-10-14; the palette ranges were recomputed over all 14 palettes and
+match). Kept here for reference:
 - Palette entry ranges: 10..185 shared; **186..215 per world; 216..245 per mission** (mostly
   backdrop sky). 2509 is world-table row 14 only, and 2510/2511 aren't in the world table.
 - The 104 world textures carry a world prefix (`d`/`i`/`g`/`m` = worlds 0..3) and are never used

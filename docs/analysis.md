@@ -79,15 +79,15 @@ Index: 9440 entries of `{u8 type, u8 volume, u32 offset, u32 size}`.
 |---|---|---|---|
 | 1 | — | 1240 | 2D sprite bitmaps (bitmap record, see below) |
 | 2 | — | 835 | Texture libraries: 1+ texture blocks each (2108 blocks, 923 unique names, path like `\7thlevel\gnome\src\data\bitmaps\mesoonbl.BMP`). A few entries hold other bitmaps or data; 211 are size 0 |
-| 4 | `FRME` | 333 | 3D animation frames |
+| 4 | `FRME` | 333 | 3D animation frames (one is empty; format under "Animations" below) |
 | 7 | `MODL` | 647 | 3D models: tokenized RenderWare script stream (see below) |
 | 8 | `MPRT` | 154 | model parts, same stream format |
 | 9 | `OB3D` | 426 | 3D object definitions |
 | 10 | `OPRT` | 57 | object properties |
 | 11 | — | 709 | int32 arrays (script data tables, `res7l.read_array`; see "Data tables") |
 | 12 | — | 592 | waves: IMA ADPCM or PCM, 11/22/44 kHz (~24 MB packed, 44.6 min; voice + SFX). See "Waves" below |
-| 13–22 | — | — | inline resources inside the BIN; offsets are relative to the key-5 block (`res7l.read_internal`) |
-| 17 | — | 14 | palettes, 944 bytes = 236 x RGBx (entries 10..245); the first equals key 6 |
+| 13–21 | — | — | inline resources inside the BIN; offsets are relative to the key-5 block (`res7l.read_internal`). 19 = scripts (2342), 20 = sprite definitions (913, mostly 74-byte records with a bitmap id at +0x26) |
+| 17 | — | 14 | palettes, 944 bytes = 236 x RGBx (entries 10..245). 2487..2509 (odd ids) are the 12 mission palettes of array 2512; 2510 and 2511 equal key 6 and are not in the world table |
 
 Key resources: 4 = string constants (movie names, faction names, weapon names),
 5 = script bytecode (~1 MB, 11 chunks), 6 = default palette (236 x RGBx), 10 = plugin list,
@@ -273,8 +273,9 @@ mission 1-1 cockpit frame and HUD weapon names all render like the original.
 
 RENDER.R32 notes from this work: `Init3D` points a RenderWare user raster at RTLIB's 640x480
 compose buffer (`SpriteSetComposeFlags`) — the 3D view is rendered straight into the 2D
-compositor's buffer. Per-frame render: `FUN_1002a09f` → `FUN_10006446` (object list at
-`+0x40264`, count `+0x40268`; object `+0x98` model, `+0x54` flags). RenderWare picks its driver
+compositor's buffer. Per-frame render: `FUN_1002a09f` → `FUN_10006446` (object list in the
+module globals `DAT_10040264`/`DAT_10040268`, i.e. RENDER+0x40264; object `+0x98` model,
+`+0x54` flags; see "Runtime object struct"). RenderWare picks its driver
 by scanning the game folder for `*.dll`; driver D (`RWDL8D20`) is used.
 
 Crash on exit (seen twice, not reproduced in the last three runs): access violation in
@@ -348,24 +349,51 @@ Ground: per-world scripts (e.g. 2418 = desert, called from 2514) place tile obje
   units by layout row. Row 1 of 1-1 is the player: Union infantry, on foot.
 - **Unit catalogue = array 5843** (197 x 5): `[template, init script, class, category,
   variant]`. Categories: 141 Sentry, 142 Tactical Defense, 143 Cruiser, 144 Heavy Assault
-  HAWC, 161 hovercraft, 181/182 armoured support, 22-24 infantry, 2xx structures,
+  HAWC, **161 treaded armoured support, 181/182 hovercraft**, 22-24 infantry, 2xx structures,
   250 rock formations, 251-255 scenery, 500 waypoint, 550-553 nav/supply, 570 ?.
-  Rows 0-23 = Union / Darken / Merc / Scorp vehicles + infantry. They match LABTEXT.DAT
-  (`tools/export_gamedata.py` joins them). Template props[1..7] = the same model in 7 team
-  colours. `script_2039(class, template, x, z, heading, level_flag, category)` instantiates a unit:
-  `script_2040`/`2041` call `AddObject(obj, 0, x, h, z)`, then `ObjectYaw(obj, heading)`,
-  then `UpdatePosOrient(obj, 1)`.
+  (161 vs 181/182 was labelled the other way round until R0, 2026-10-14. Verified four ways:
+  the 161 rows use the tread models with `?tl1*` textures and the 181/182 rows the hover-skirt
+  models with `?hl2*` textures, seen in the viewer; their init scripts set the codex stats and
+  loadouts of the treaded / hover vehicle; and with the swap LABTEXT kph = prop35 x 0.45 for
+  all eight rows.) Rows 0-23 = Union / Darken / Merc / Scorp vehicles + infantry; they match
+  LABTEXT.DAT (`tools/export_gamedata.py` joins them). The scripts are authoritative where the
+  codex text differs (stat B of 5 vehicles, some ammo counts, Legionnaire zWASP vs FLECH).
+  Scenery rows 251/252/253/255 have variant = world + 5 (each world has its own models);
+  structures 211..237 use variant 1 or 88..99.
+- **Template props** `[class, m1..m7, a, b]`: props 1/4/7 are the LOD0/LOD1/LOD2 models
+  (`script_2146` clones them into object props 79/80/81), props 2/3/5/6 are LOD0/LOD1 in the
+  two other texture sets (Prowler: `hbl1a*`, `hbl1w*`, `hbl1s*`; 330/318/318 triangles; LOD1
+  169-179, LOD2 100) and go onto list `G1849`. What the a/w/s sets are for is open. Tanks and
+  hovercraft have no LOD1 variants (props 4-6 = 0). `script_2039(class, template, x, z, heading,
+  level_flag, category)` instantiates a unit: `script_2040`/`2041` call `AddObject(obj, 0, x, h,
+  z)`, then `ObjectYaw(obj, heading)`, then `UpdatePosOrient(obj, 1)`.
 - **Unit init scripts** (catalogue column 1, e.g. 2619 → 2631 for the Union Prowler) set:
   codex stat A (`script_2056` → props 97/94/134) and stat B (`script_2057` → 95/98/135);
-  turn/accel limits (SetMaxAngularVelocity/Accel, SetMaxAccel); weapons
-  (`script_1656(obj, weapon, ammo, hardpoint)` using **weapon table array 1281**);
-  the animation state machine (`addAnimation`/`addTrigger` over FRME resources); AI/update
-  scripts (props 72/75/93/130).
+  throttle limits (`script_2066(obj, rev, fwd, a, b)` → props 36/35/15/33), torso and pitch
+  (`script_2070`, `script_2074`), turn/accel limits (SetMaxAngularVelocity/Accel, SetMaxAccel);
+  weapons (`script_1656(obj, weapon id, ammo, hardpoint)` using **weapon table array 1281**);
+  the animation state machine (`addAnimation`/`addTrigger` over FRME resources); and the
+  cockpit resources props 72 (type-20 sprite), 75 (`ViewportCrop` script), 93 (gauge array),
+  130 (`LinkModel` script). The AI is the template update script 1723 plus the task list (see
+  "AI" below), not these props. The Union Lion branches on `G982` (set to 1 by the network
+  scripts 2565/7xxx and 0 by 6277/7275, so probably the multiplayer flag): campaign stats
+  90/2200, fwd 200; otherwise 20/1000, fwd 110.
+- **LOD bands**: the template's `[2, min, max, 19, script]` records run scripts 2147/2148/2149
+  (2150 picks by what exists) when the camera distance (float32 min..max in model units, e.g.
+  0..0.21, 0.2..0.51, 0.5..1.2, 1.1..50) enters the band. They set prop 92 = 0/1/2,
+  `setLOD(obj, n)`, `LinkModel(obj, prop 79/80/81)` and call `script_425(obj, lod)`, which maps
+  per-LOD part ids into props 10/22/29/31. Prop 92 is the current LOD, not difficulty.
 - **Scale**: game units / 100 = model units (ground tile = 6 model units = 600 game units).
-  Headings are hundredths of a degree.
-- **Palettes**: entries 10..185 are identical in all 12 mission palettes. Entries 186..245 change
-  per mission (terrain colours). So vehicle textures are palette-independent, while 104
-  terrain/scenery textures need the world palette (`export_models` writes `__w1..3` variants).
+  Headings are hundredths of a degree. **1 game unit ≈ 0.125 m** (hypothesis from R5: model
+  heights x 100 vs codex heights match for the Ogre and Minotaur; it also explains the codex
+  speed factor, kph = prop35 x 0.45 = prop35 x 0.125 x 3.6, if prop35 is in units/s). Unconfirmed
+  until R2 measures a speed.
+- **Palettes**: entries 10..185 are identical in all 12 mission palettes; **186..215 change per
+  world** (same for all palettes of a world) and **216..245 per mission** (mostly backdrop sky).
+  So vehicle textures are palette-independent, while 104 terrain/scenery textures (all with a
+  world prefix `d`/`i`/`g`/`m` = world 0..3, never used outside their world) need the world
+  palette (`export_models` writes `__w1..3` variants). Only `gaus2011/2012` (model 5925,
+  unreferenced) use the per-mission range.
 - **Rock formations** (category 250) have no texture in the model. The spawner applies
   `SetModelTexture(model, 2482 + world)` (type-1 128x128 bitmaps).
 - **RWX vertex rule**: vertices are transformed by the CTM in effect when they are emitted.
@@ -408,9 +436,9 @@ turned left and right) and with the tiling of category-252 pieces (1-3 top view)
 - Unit stats in `LABTEXT.DAT` (vehicle database text), trivia in `TRIVIA.DAT/.IDX`.
 - Assets (models, textures, sprites, audio, FMV) are all extractable from the 7L archive.
   Models and textures: done (`tools/export_models.py` → `remake/game/_import/`, viewed with
-  the Godot model viewer). Not yet decoded: FRME animations, OB3D/OPRT object definitions,
-  which of the 14 palettes applies where, and model units vs metres. Handedness is settled
-  (no mirror, see "Orientation and camera").
+  the Godot model viewer). Object definitions, palettes and the FRME format are decoded (see
+  below); FRME export to glTF (R4) and the metre scale (0.125 m/unit hypothesis) are still
+  open. Handedness is settled (no mirror, see "Orientation and camera").
 - **Terrain** (2026-10-12). Mission 1-1 has **no heightfield**: RENDER's ground pointer
   `DAT_10037ae4` is NULL in the cockpit (read with `tools/dev/peek.exe`). The playfield is a
   flat plane of ground tiles: MPRT quads textured `<world>grd<bits>.bmp`, e.g. `dgrd1000` /
@@ -426,12 +454,21 @@ turned left and right) and with the tiling of category-252 pieces (1-3 top view)
 - **No heightfield anywhere**: `FUN_100043f0` (RENDER's resource load proc) accepts a `GRND`
   magic for `AddGround`, but no resource on the disc has it. Every mission is a flat plane.
 - **Object templates (OB3D type 9, OPRT type 10)**, loader `FUN_100043f0`, decoder
-  `res7l.read_object`. Layout: `u32 slots`, then records: `[1,a,b]`, `[2,min,max,restype,res]`
-  (restype 7 = model LOD for distance min..max, otherwise a script active in that range),
+  `res7l.read_object`. Layout: `u32 slots`, then records: `[1,a,b]`, `[2,min,max,restype,res]`,
   `[6,interval,script]` update script, `[8,model]`, and finally `[7,size,n,props[n]]`, the
   property array that GetProperty/SetProperty index (runtime object +0xe4 = record count,
   properties at +0xec+16*count). `size` is usually 144. Templates seed only a few properties.
-  Scripts set the rest (unit stats come from arrays via SetProperty). All 483 decode.
+  Scripts set the rest (unit stats come from arrays via SetProperty). All 483 decode. In the
+  shipped data every one of the 1136 range records has restype 19 (a script run when the camera
+  distance, float32 min..max, enters the band; unit LOD bands use 2147..2150) and no template
+  uses kinds 1 or 8; the loader accepts them anyway. Update records: `[6, 30, 1723]` on the
+  42 vehicle templates, `[6, 1000, 0]` / `[6, 30, 0]` on most others.
+- **Runtime object struct** (RENDER.R32, from `FUN_10006446`): the object list is the module
+  global `DAT_10040264` (array of object pointers, capacity 2500) with the count at
+  `DAT_10040268`; per object `+0xc/+0x10/+0x14` = float x, y, z, `+0x54` flags (byte `+0x55 & 5`
+  = hidden, `& 0x80` no sort), `+0x58` float radius, `+0x88` sort key, `+0x8c` squared distance
+  to the camera (written each frame), `+0x98` model, `+0xe4`/`+0xec` properties as above. The
+  R2 spec has the exported getter addresses to decompile for the rest.
 - **String constants (key 4)**, 541 strings: FMV names, AI team names (Union/Darken/Merc/Scorp),
   characters (Thane, Kylie, Sheridan, Wilkins), weapon names, the **full control-action list**
   and key names, keyboard presets ("G-NOME Flight Sim/Arcade", "MechWarrior2", "EarthSiege2",
@@ -442,3 +479,113 @@ turned left and right) and with the tiling of category-252 pieces (1-3 top view)
 - Script disassembler: done (see "Script VM"). Next: name the object property indices
   (GetProperty/SetProperty, ≈3300 uses) and the type-11 arrays (unit stats, weapons), find
   each mission's entry script and its object placement, and decode FRME animations.
+
+## Gameplay systems (R2-R9 research, 2026-10-12; checked and folded in by R0, 2026-10-14)
+The backlog specs `docs/backlog/R2..R9` hold the detail (script ids, every property seen,
+export addresses). This section keeps the facts the remake builds on. "H" marks a hypothesis.
+
+### Player, boarding, camera, bounds (R5, R2)
+- **Player = G973**: mission start script 8737 sets `G973 = ArrayGet(layout, 1, 1)` (layout
+  row 1). Commandeer `script_2243` sets `G1826` = the old body. 1-1 globals: G1 = player,
+  `G33[0..4]` = the five Mercs, `G13[0]` = the Prowler to board, `G625[0..1]` = waypoints.
+- Vehicle/pilot props: 0 class code (<100 infantry, 100-199 vehicle, ≥200 structure, 500
+  waypoint), 54 side, 77 control (1 player, -1 AI, 0 unmanned, -1000 cannot be boarded), 78
+  pilot, 115 cockpit type (row of array 2216), 126 (on the pilot) vehicle occupied, 127 last
+  vehicle. Board = `script_2223` (pilot parked at y=1000), dismount = `2226` (occupant at
+  vehicle + (100, 0, -150) world units), eject all = `2225`, contact boarding `2229` → `2240`
+  (needs `DotProduct(actor, 0, target, 0) >= 9000`).
+- Camera modes `G972`: 1 cockpit `AttachCamera(G973, prop10, 0, dy, 0)`, 2 trailing (base
+  30 infantry / 47 vehicle, zoom-out d += 3 every 40 ms up to 15/30; `AttachCamera(G973, 0,
+  0, base + 2d, -12d)`), 4 external, 5 = script 2170. Scripts 2171, 2191-2194.
+- **Bounds**: `script_2515(xmax, xmin, zmax, zmin)` → G1833..G1836. The ground scripts (2418
+  for the desert) tile exactly that rectangle. Outside: 2359/2360 warn (waves 2352-2357),
+  2363/2364 escalate, 2365/2366 kill. Nothing in the scripts clamps the position.
+- Out-of-mission objects: the object list holds 2500 slots; ~823 live and 94 with a model in
+  the 1-1 cockpit (R2 probe).
+
+### Movement (R3; parameters read from scripts, natives not decompiled yet)
+- Props: 12 throttle setpoint (`script_2064` clamps to [prop36, prop35]; keys add ±5), 34
+  current forward velocity (`script_2062` → `SetVelocityForward`), 35/36 max forward/reverse
+  throttle, 33 creep speed when turning from a standstill, 15 ? (set by 2066, read natively?),
+  37 yaw command (-1/0/+1), 20-24 torso twist (`script_2070`, `StepTwist`), 25-32 weapon pitch
+  (`script_2074`), 55-57 model dimensions (`SetModelDimensions` from the rest FRME), 136/137
+  backups of 35/36 (`script_2315` restores them).
+- Per tick: player update script 1727, AI units 1723 (template record `[6, 30, 1723]`), both
+  → `script_1728`: `UpdateTimeStep(obj, dt, 41)`, `UpdateCollideCheck(obj, G1814, 30, 0)`,
+  collision response 2227, clump twist/pitch 2077. `SetTargetAxis(obj, prop37, 2, dt)` turns,
+  `ApproachTargetSpeed(obj, dt)` (2065) moves the velocity toward the setpoint.
+- **Codex speed = prop35 x 0.45 kph** for 19 of the 20 vehicles (Venom 100 → 31.5 is the
+  outlier; the Lion uses its campaign branch, 200). H: prop35 is game units per second.
+- Controls: arrays 2548-2552 are the five keyboard presets (63 x 8 per action: `[action,
+  oneshot, mod1, key1, mod2, key2, mod3, key3]`, Win32 VK codes; mod 1 CTRL, 2 SHIFT, 3
+  joystick input, 5 plain key, 0 any modifier (H)); array 2544 (98 x 17) maps action id → handler
+  script (0 = handled natively: turn, throttle, torso, pitch, fire, pan). Control schemes are
+  scripts 1978/1979 (throttle) and 1980. Preset 0 bindings are listed in the R5 spec. The
+  default preset is unknown.
+- **Difficulty `G2114`** ∈ {0, 1, 2}: a three-way option set by scripts 6936/6937/6938 (H:
+  the difficulty setting; no string is attached in the scripts). Mission 1-1 (8737) deactivates
+  3/2/1 of its five Mercs by it and sets the kill target `G2432` = 2/3/4; the AI fire decision
+  1677 fires only if `Random(1, 3 - G2114) == 1`. Detail level is `G2117` (clip distance).
+
+### Animations (R4; file format verified over all entries)
+- **FRME** = `char[4] "FRME"; u32 nparts; u32 nframes; u32 0`, then `nframes x nparts` records
+  of 12 float32: a 4x3 row-vector matrix (rows 0-2 rotation/scale, row 3 translation), the RW
+  `TransformCTM` without its last column. **Frame-major**; part p is the clump with tag p+1;
+  matrices are **parent-relative** and equal the clump matrices of the model for the 1-frame
+  rest poses (2597/2604/2611 vs Prowler LODs 2583/2589/2595). Size = 16 + 48·P·F for 331 of
+  332 non-empty entries; **4733** says 10 x 71 but holds 700 records (70 frames). Scale is
+  real (17,619 of 74,905 matrices have non-unit rows).
+- Setup per unit (in the init script's callee, e.g. 2631): `addAnimation(obj, index, type,
+  frme_lod0, frme_lod1, frme_lod2, n, a, b, script)`, `addTrigger(obj, frme, event, target,
+  flag)`, `installAnimationType(obj, 11)` (11 = rest pose, 1 frame). Types 0-4 on HAWCs,
+  5/7/9/10 kneel/prone/get-up on infantry (H). `animationSetupProps(12, 33, 15)` once at 3D
+  init (2564). Meanings of n, a, b, the trigger events and the frame rate: open. Since the
+  scripts set speed through prop 12 / `SetVelocityForward`, animation probably does not drive
+  movement (H until `doAnimationUpdate` is read).
+
+### Weapons (R6)
+- **Array 1281** (32 x 25), one row per weapon; `script_1660(id)` returns the row. Columns:
+  0 id, 1 class (1 energy, 2 gun, 3 guided missile, 4 rocket; names H), 2 ? (unread by
+  scripts), 4 guided, 5 projectile speed, 6 damage, 7 reload/recharge, 8 recharge modifier, 9
+  projectile factory script (1691..1707, clones an OPRT template), 10 gravity, 11 fire wave,
+  12/13 min/max range, 15 shield-resist (→ prop 50), 16 shield drain (→ 52), 17 second-pool
+  damage (→ 51), 18/19 splash damage/radius (→ 53/54), 20-22 impact effect templates, 23 ammo
+  base (default ammo = x1.5, cap x2), 24 network object type; 3 and 14 are always 0.
+- **Weapon id → name** (script 1716 draws key-4 strings by offset; checked against all 24
+  loadouts in R0): 1 FIL-30, 2 P2MEC, 3 FLECH, 4 SAG/5T, 5 3cROCK, 6 3cREAP, 7 VISOM, 8 GRAY7,
+  9 PUG, 10 CHUM, 11 DASY, 12 AIM-9, 13 HOMP11, 14 RUPP, 15 HSSO, 16 SREM, 17 LRIP, 18 CETI,
+  19 RAID, 20 zWASP, 21 UNKPA, 22 GAUS30, 23 GAUS20, 24 PRIF44, 25 EGGR, 26 GASHR, 27 ECMp,
+  28 POPPR, 29 ARC-M, 30 WaRT, 31 TAR-12, 32 LaserSite.
+- Mounts: `Clone(1282)` (8 x 9) → prop 66, count prop 67; `script_1656(obj, id, ammo,
+  hardpoint)` adds one (hardpoint ≤ prop 102). Fire: 1675 (action) → 1678 → 1679 → 1682
+  (projectile: props 42 shooter, 58 row, 35/44/46/50-54, `SetGravity`). Callback table
+  `G1861` (2564): 2228 hit, 1689 end, 1683, 1681 recharge, 2055/2058 stat changes, 430 sector
+  lookup. Damage: 1708 (stat-A reduction), 1709 (split a/b), 2291/2292 (per-clump health
+  prop 85 from `DefaultClumpHealths`), 2300 (random clump). **Stat A (97/94) vs stat B (95/98)**:
+  which is armour and which shields is open; the damage scripts make 97/94 behave like shields.
+- Spatial hash for collisions: array 427 (26 x 26 cells of 1200 units from -15600), 430-432.
+
+### AI (R7)
+- Per tick: update 1723 → `script_419` (think countdown prop 19 reloaded from prop 18;
+  retarget timer prop 124 → 2339 vehicles / 2351 infantry) → `script_417` runs the current
+  task script, then 403 drains the command queue (prop 53).
+- Task list: `script_412` → `setTaskProps(58, 60)`, prop 58 = `Clone(411)` (10 tasks x 9
+  fields: 0 task script, 3 target, 4-6 parameters; rest H), prop 60 = current index. Natives
+  `insertTask/setCurrentTask/setNextTask(obj, script, prio, target, f4..f8)`, `existsGoal`,
+  `activateGoal`, `completeTask`/`doNextTask`; hook `G991` on every switch.
+- Task scripts 2016-2031 (names H): 2016 move, 2017 board, 2018 follow, 2019 attack (→ 2020
+  vehicle / 2021 infantry), 2022 turret, 2023 guard object, 2024 guard position + scan, 2025
+  harass, 2026 flee, 2027 strafe/circle, 2028 patrol, 2029 approach + parallel, 2030 circle,
+  2031 hold. Order wrappers 2342-2349; movement wrappers 2032-2038 → MoveInCircle, MoveToEvade,
+  MoveToFlock, MoveToFollow, MoveToParallel, MoveToPursue, MoveToTrueLead (RENDER natives).
+- Targeting: 2015 → 2337 picks the nearest manned hostile within prop 40 (sensor range) from
+  the 150-slot list `G1816`; hostility 2080 (prop 113 IFF codes differ; infantry compare side
+  prop 54). Threat matrices 2316-2318 (41 x 41 by AI slot prop 59); 2323 sums damage over 60
+  ticks (`G1868`), 424 retaliates. Default task from 2530: guard and scan 3000 units.
+- Mission hooks: G985 destroyed, G984 vehicle entered, G988 spotted, G983, G987 damage, G992.
+
+### Scenery and world textures (R9)
+- Spawner `script_2523(mission, layout, world)`: 251 `SetLevel -50`, 570 `SetLevel -25`, 252
+  corner tweak `script_2524`, 250 `SetModelTexture(model, 2482 + world)`. Scripts 2090/2092
+  clone model prop 1 or 2 and apply `SetModelTexture(prop 3)` when set; who sets prop 3 is open.
+  No other scenery gets a texture call; the per-world look comes from the palette ranges above.

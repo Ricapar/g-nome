@@ -104,7 +104,9 @@ func _model(id: int) -> Node3D:
 		if doc.append_from_file(path, state) != OK:
 			_model_cache[id] = null
 		else:
-			_model_cache[id] = doc.generate_scene(state)
+			var scene := doc.generate_scene(state)
+			RwModel.apply_frames(scene) # frame 0 of stacked textures (normal paint)
+			_model_cache[id] = scene
 	var n: Node3D = _model_cache[id]
 	return n.duplicate() if n else null
 

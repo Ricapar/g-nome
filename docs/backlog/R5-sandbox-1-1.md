@@ -54,9 +54,8 @@ placeholders and are marked as such in code.
   then 2354). 2365/2366 then set prop100 = 0 and call `script_1649(obj, 0)`, which kills the
   unit. Coming back inside calls 2362 (clear). Nothing in the scripts clamps the position.
   Whether RENDER.R32 also clamps natively is unknown.
-- **Exporter bug:** `export_gamedata.py` parses the bounds with
-  `script_2515\(([^)]*)\)`, which stops at the first `)`. `missions.json` therefore holds
-  `"10200, -(9150"`. Fix it (parse `-(n)`) and export the bounds as four integers.
+- ~~Exporter bug: bounds truncated.~~ Fixed in R0 (2026-10-14): `missions.json` `bounds` is
+  `[xmax, xmin, zmax, zmin]` as four integers for all 22 missions.
 
 ### Scale (new, strong hypothesis)
 - Exported glTF heights (model units, computed from node matrices × vertices) × 100 = game
@@ -226,8 +225,7 @@ preset picker.
 - Near/far 1.25 m / 375 m × DrawDistance factor; fog depth from `worlds.json` × 0.125.
 
 ## Step-by-step plan
-1. Fix the bounds parsing in `tools/export_gamedata.py`, re-export, and check that 1-1 gives
-   `[10200, -9150, 3000, -10200]`.
+1. ~~Fix the bounds parsing.~~ Done in R0; 1-1 gives `[10200, -9150, 3000, -10200]`.
 2. Factor `core/units.gd`, `core/gamedata.gd`, `core/model_cache.gd` out of the mission viewer.
    The viewer must look the same afterwards (`--shots 1-1`).
 3. Apply R1's heading/handedness convention in `units.gd`. If R1 isn't done, use the viewer's
@@ -300,4 +298,6 @@ preset picker.
   = array 2216.
 - Camera modes G972 and `AttachCamera` offsets (scripts 2171, 2191–2194).
 - 1-1 globals: G1 = row 1, G33[0..4] = Mercs, G13[0] = Prowler, G625[0..1] = waypoints.
-- Exporter bug: `missions.json` `bounds` truncated by the regex.
+
+All of the above was folded into analysis.md "Gameplay systems" by R0 (2026-10-14), with
+the scale marked as a hypothesis.

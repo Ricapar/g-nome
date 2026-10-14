@@ -121,9 +121,8 @@ Also known (`docs/analysis.md`): object list at `+0x40264` (count `+0x40268`), o
 There is no heightfield in any mission: ground = flat plane, `DAT_10037ae4` NULL.
 
 ## Plan
-1. **Check the class labels first** (see Open questions: category 161 vs 181/182). Open the
-   catalogue rows 3/4 models in the model viewer and fix `CATEGORY`/`CODEX_MATCH` in
-   `tools/export_gamedata.py` if they are swapped.
+1. ~~Check the class labels first.~~ Done in R0 (2026-10-14): 161 = treaded, 181/182 =
+   hovercraft, confirmed by the models, stats and loadouts; `units.json` is re-exported.
 2. Extend the exporter: per unit, parse the init script (and the `script_X(L0)` it calls) and
    record `script_2066/2070/2074` args, `SetMax*`, `SetModelDimensions`, and the `G982`
    branches. Output goes to `units.json` (gitignored).
@@ -161,13 +160,9 @@ There is no heightfield in any mission: ground = flat plane, `DAT_10037ae4` NULL
 - The user judges feel side by side once R5 exists.
 
 ## Open questions / risks
-- **Class labels look swapped (strong hypothesis).** In `units.json`, rows with category 161
-  ("Hovercraft") carry the stats of the codex treaded vehicle and use `?tl1*` textures. Rows
-  with 181/182 ("Armored Support") carry the hovercraft codex stats and use `?hl2*` textures.
-  Swapped, every factor is 0.45 (Razor codex 103.5 = Legionnaire-row prop35 230 × 0.45), stat
-  A matches, and stat B matches for 5 of the 8. The last session's "all 20 match the codex,
-  including the two stats" claim is therefore wrong as exported. Even after the fix, Rampage,
-  Stalker, WidowMaker and Scorpion differ from the codex in one or both stats.
+- ~~Class labels look swapped.~~ Confirmed and fixed in R0. After the fix, Rampage, Stalker,
+  WidowMaker, Scorpion and some stat-B values still differ from the codex text; the scripts
+  are authoritative.
 - What stat B (props 95/98) is. `ApproachTargetSpeed`'s return value drains or refills it, and
   1723/1727 reset prop98 to prop95 every tick. Energy? Shields?
 - Meaning of prop15 and of `SetMaxAngular*`'s first two axes; angular units (deg/100 per
@@ -186,11 +181,6 @@ There is no heightfield in any mission: ground = flat plane, `DAT_10037ae4` NULL
   path (`RangeJoystickAxis`, `EnableJoystick`) is relevant to P6.
 
 ## Notes to fold into analysis.md
-- Property names above (10, 12, 15, 20-37, 55-57, 84, 95/98, 136/137) and helper scripts
-  2055, 2061-2077, 1959-1980, 1723/1727/1728.
-- Correction: of "AI/update scripts (props 72/75/93/130)", prop75 = 2629 is a cockpit
-  `ViewportCrop` script, prop93 = array 2628 is the cockpit gauge layout (`script_874` marks
-  gauge n dirty; 3 after a speed change, 6 after a stat-B change), prop130 = 2630 is a cockpit
-  `LinkModel` script, and prop72 = 2620 is a type-20 resource.
-- The RENDER.R32 export addresses listed above.
-- The suspected 161 ↔ 181/182 swap and the codex factor kph = prop35 × 0.45.
+Folded in by R0 (2026-10-14; analysis.md "Gameplay systems" → Movement, and the unit
+catalogue bullets). Still to add when found: the native formulas and the export addresses'
+decompiled semantics.
