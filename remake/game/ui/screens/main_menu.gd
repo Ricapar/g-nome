@@ -42,14 +42,13 @@ const MENU := [
 var _key_index := -1
 var _left_index := -1
 var _status_base := ""
-var _sounds := UiSounds.new()
+var _sounds: UiSounds = UiSfx
 var _pad := false # last input came from keyboard/gamepad: focus follows selections
 
 
 func _ready() -> void:
 	# HDR 2D lets phosphor text and lamps bloom; per viewport so the 3D viewers are unaffected.
 	get_viewport().use_hdr_2d = true
-	add_child(_sounds)
 	_sounds.play(&"ambience") # original menu loop (silent without the import)
 	_frame_view.texture = _frame.get_texture()
 	var key_group := ButtonGroup.new()

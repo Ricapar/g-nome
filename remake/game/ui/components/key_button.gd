@@ -11,6 +11,9 @@ extends Button
 const GLOW := Color(0.25, 0.9, 0.42)
 
 @export var status_text := ""
+## Draw as hovered/focused (gallery and screenshots).
+@export var preview_hover := false:
+	set(v): preview_hover = v; queue_redraw()
 
 ## Projected corners of the face plate (top-left, top-right, bottom-right, bottom-left), in
 ## local pixels; empty = use the control's rect.
@@ -57,5 +60,5 @@ func _draw() -> void:
 		for k in 3: # soft outer glow from stacked strokes, then the crisp line
 			draw_polyline(_outline(3.0 - 1.5 - k * 2.0), Color(GLOW, 0.05), 2.0, true)
 		draw_polyline(_outline(3.0), GLOW, 1.5, true)
-	elif _hover or has_focus():
+	elif _hover or has_focus(true) or preview_hover:
 		draw_polyline(_outline(3.0), Color(0.8, 1.0, 0.95, 0.4), 1.5, true)

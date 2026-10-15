@@ -10,6 +10,9 @@ const MARK := Color(0.3, 0.95, 0.45)
 
 ## Status-line help text shown while hovered or focused.
 @export var status_text := ""
+## Draw as hovered/focused (gallery and screenshots).
+@export var preview_hover := false:
+	set(v): preview_hover = v; _refresh()
 
 var _face := Control.new()
 var _mat := ShaderMaterial.new()
@@ -57,7 +60,7 @@ func set_entry(label: String, status: String = "") -> void:
 func _refresh() -> void:
 	var state := 0
 	if text != "":
-		var lit := _hover or has_focus()
+		var lit := _hover or has_focus(true) or preview_hover
 		state = (4 if lit else 3) if button_pressed else (2 if lit else 1)
 	_mat.set_shader_parameter("state", state)
 	queue_redraw()

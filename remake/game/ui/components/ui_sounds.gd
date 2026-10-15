@@ -1,7 +1,9 @@
 class_name UiSounds
 extends Node
-## Menu sound effects: play(&"hover" | &"slot" | &"key" | &"back" | &"denied" | &"toggle" |
-## &"quit" | &"ambience"), stop(id).
+## Menu sound effects (autoload "UiSfx"): UiSfx.play(&"hover" | &"slot" | &"key" | &"back" |
+## &"denied" | &"toggle" | &"quit" | &"ambience"), UiSfx.stop(id), and UiSfx.bind(button, id)
+## for the standard hover tick + press sound. UI sounds play on the "UI" bus, the menu loop on
+## "Music" (default_bus_layout.tres).
 ##
 ## Uses the original game's own menu sounds when tools/export_audio.py has written them to
 ## res://_import/audio (gitignored game data; loaded at runtime, no Godot import step).
@@ -49,6 +51,7 @@ func _ready() -> void:
 		var p := AudioStreamPlayer.new()
 		p.stream = stream
 		p.max_polyphony = 1 if LOOPING.has(id) else 3
+		p.bus = &"Music" if LOOPING.has(id) else &"UI"
 		add_child(p)
 		_players[id] = p
 
@@ -57,6 +60,14 @@ func play(id: StringName) -> void:
 	var p: AudioStreamPlayer = _players.get(id)
 	if p and not (LOOPING.has(id) and p.playing):
 		p.play()
+
+
+## Standard button sounds: the hover tick on mouse-over or on visible (keyboard/gamepad)
+## focus, and `id` when pressed.
+func bind(b: BaseButton, id: StringName = &"slot") -> void:
+	b.mouse_entered.connect(func(): if not b.disabled: play(&"hover"))
+	b.focus_entered.connect(func(): if b.has_focus(true): play(&"hover"))
+	b.pressed.connect(play.bind(id))
 
 
 func stop(id: StringName) -> void:
