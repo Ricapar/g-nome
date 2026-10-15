@@ -18,6 +18,8 @@ Status: Phase 0 in progress. Nothing playable yet.
 3. Open `remake/game` in Godot 4.7 and run it. The model viewer lists every MODL/MPRT.
    Arrow keys select, drag orbits, the wheel zooms, C toggles culling, X mirrors Z.
    Batch screenshots: `godot --path remake/game -- --shots <outdir> modl_02700,modl_02698`.
+4. UI: the main menu style frame is `res://ui/screens/main_menu.tscn`, and the component
+   gallery is `res://ui/gallery/gallery.tscn` (both run with F6; see "UI kit" below).
 
 ## Decisions (2026-10-12)
 
@@ -44,6 +46,65 @@ Status: Phase 0 in progress. Nothing playable yet.
   user's disc or ISO at dev or first-run time. New art made for the remake can be committed.
   Mission data derived from the original scripts counts as game data until we decide
   otherwise.
+
+## UI kit (R11)
+Design direction, palette and typography: `UI-DESIGN.md`. Everything lives in `game/ui/`.
+
+**Pieces**
+- `theme/main_theme.tres` is the project theme. Style controls by setting
+  `theme_type_variation`, never with per-node overrides. Variations by role:
+  - Buttons: `ScreenButton` (on-screen buttons and tabs; toggle = selected tab), `GlassButton`
+    (pillar slots), `KeyButton` / `KeyButtonSelected` (bottom bar), `ChoiceButton`,
+    `ListRow`, `BindCell` / `BindCellEmpty` / `BindCellCapture`.
+  - Text: `ScreenTitle`, `ScreenTitleWhite`, `DialogTitle`, `RowLabel`, `DataLabel`,
+    `DataValue`, `BodyText`, `StatusLabel`, `Readout` (mono), `SectionLabel`, `Caption`.
+  - Panels: `DialogPanel`. HSlider, VScrollBar, HSeparator and tooltips are styled on their
+    base types.
+- `components/`, one script per component, built in code from exported fields:
+  - Screen furniture: `SafeArea` (keeps content within 16:9 on ultrawide), `StatusBar` (help
+    line; `watch(root)` shows the hovered/focused control's `status_text`), `PaneFrame`,
+    `ScreenChrome`.
+  - Inputs: `ChoiceRow` (triangle-marker options; a toggle is two options), `SliderRow`,
+    `KeyBindRow` (three mappings; captures key, mouse, pad button or axis), `ListPicker`
+    (save slots and lists).
+  - Overlays and stages: `ScreenDialog`, `TransitionOverlay`, `ModelStage` (3D turntable),
+    `TacticalMap`.
+  - Frame-bound: `GlassButton`, `KeyButton`, pinned to the 3D `MenuFrame`.
+- Autoloads:
+  - `UiRouter`: `push`/`pop`/`replace` screens with the shutter transition, `back()`, and
+    `await confirm(title, body, buttons)`. `using_pointer` tells you whether to grab focus
+    hidden. `StubScreen.make(title, note)` stands in for screens not built yet.
+  - `UiSfx`: `play(id)`, and `bind(button, id)` for the hover tick plus press sound. Sounds
+    play on the `UI` bus and the menu loop on `Music`.
+- Input: ui_accept and ui_cancel include pad A and B. `ui_page_prev`/`ui_page_next` are
+  PgUp/PgDn and LB/RB. Focus rings show only for keyboard or pad focus (Godot's hidden focus).
+  Use `has_focus(true)` when drawing focus yourself.
+
+**Adding a screen.** Make a scene whose root is a full-rect Control with a `SafeArea`, lay it
+out with containers only, and set type variations. Give each interactive control a
+`status_text` and call `StatusBar.watch(self)` at the end of `_ready`. Open the screen with
+`UiRouter.push(...)`. Define `ui_back() -> bool` if Escape should do something other than
+pop the screen.
+
+**Art rules**
+- Icons are SVG in `ui/icons/`, drawn white unless they need fixed colours. Their `.import`
+  must name the `svg` importer: a file containing only `[remap]` and `importer="svg"` is
+  enough. They then load as `DPITexture` and stay sharp at any scale.
+- UI screens render with HDR 2D, which brings two catches.
+  - Theme and draw colours are sRGB, but literal colours in canvas shaders are linear, so
+    write them as `pow(col, 2.2)`.
+  - Alpha blends in linear light. A 60% black dim only looks lightly dimmed, so use about
+    85%. Dialog backgrounds must be opaque.
+- Keep UI colours at or below 1.0. Only lamps and LEDs may go above 1.0 and bloom.
+
+**Gallery and checks**
+```
+godot --path remake/game res://ui/gallery/gallery.tscn -- --shots <dir> --size 3840x1600 --navtest --padtest --dialog
+```
+Each run prints a layout AUDIT per page, covering content larger than the screen, controls
+off screen and clipped labels. `--navtest` walks the arrow/d-pad focus graph and lists
+unreachable controls. `--padtest` injects gamepad events and checks focus, accept, dialog
+cancel, back and page switching.
 
 ## Roadmap
 

@@ -53,6 +53,16 @@ set below; and pausing a mission opens a pause menu with the original's choices.
 - Where did the original store options: `7THLEVEL.INI`, the save file or nowhere?
 - Are there difficulty settings? (Look in the options pages and the mission scripts.)
 
+## Available from R11 (2026-10-14)
+- `ChoiceRow` (difficulty, detail, on/off), `SliderRow` (volumes, sensitivity) and
+  `KeyBindRow` (three mappings per function, as in the original). `KeyBindRow` captures
+  keys, mouse buttons, pad buttons and axes and emits `rebound(slot, event)`. Applying the
+  binding to the InputMap and detecting conflicts belongs to this item.
+- Audio buses `UI` and `Music` exist (`default_bus_layout.tres`). Add `SFX` and `Voice` here.
+- `ui_page_prev`/`ui_page_next` (PgUp/PgDn, LB/RB) are available for option tabs.
+- Moved here from R11: the UI scale option (`content_scale_factor`), and high-contrast and
+  colour-blind-safe theme variants.
+
 ## Dependencies
 - R11 (kit), R12 (entry from the main menu). Pause menu needs R5 (a mission to pause).
 - Feeds R5 (input action list) and R17 (HUD options, e.g. colour/scale).

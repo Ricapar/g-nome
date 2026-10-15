@@ -1,6 +1,6 @@
 # R11: UI design system and Godot UI foundation
 
-Status: **active**
+Status: **active**: all work is done (2026-10-14); waiting on the user's gallery sign-off and a real-gamepad run
 
 ## Decisions (user, 2026-10-12)
 - Keep the **original visual direction** (modernised G-Nome). No modern game UI as reference
@@ -114,9 +114,40 @@ Status: **active**
   slot, 8398 menu loop; Escape replays the slot/key sound like the original). Hover keeps our
   synthesized tick on purpose: the original is silent there, but the user likes it. Selected
   key label is upright (italic looked wrong on the angled keys). Closed for now.
-- Next: gallery scene; router/actions (R12); test with a real pad.
-- Earlier next steps: user review of the style frame; authored hi-res material maps (replace the noise);
-  keyboard/gamepad focus pass; gallery scene; UI sounds; router.
+- Kit completed and gallery built (2026-10-14). The usage guide is in `remake/README.md`, "UI kit".
+  - New components: `ChoiceRow`/`ChoiceButton` (triangle markers; a toggle is two choices),
+    `SliderRow` (SVG grabbers), `KeyBindRow` (three mappings; captures key, mouse, pad button
+    or axis; Escape cancels, Delete clears), `ListPicker`, `ScreenDialog`, `TransitionOverlay`
+    (shutter to a phosphor line, optional LOADING readout), `SafeArea` (content within 16:9 on
+    ultrawide), and `StubScreen`. `StatusBar.watch(root)` wires help text for a whole screen.
+  - Theme variations: `ScreenButton`, `ChoiceButton`, `ListRow`(+`Text`/`Detail`), `BindCell`
+    (+`Empty`/`Capture`), `RowLabel`, `SectionLabel`, `Caption`, `BodyText`, `DialogTitle`,
+    `DialogPanel`. HSlider, VScrollBar, ScrollContainer, HSeparator and tooltips are styled on
+    their base types. Chamfers come from `StyleBoxFlat` with `corner_detail = 1`.
+  - SVG icons in `ui/icons/` import as `DPITexture` (the `svg` importer, set in each
+    `.import`). They stay sharp at 4K.
+  - Autoloads: `UiRouter` (stack, transitions, `confirm()`, `back()`, `using_pointer`) and
+    `UiSfx` (`UiSounds` with `bind()`; `UI` and `Music` buses in `default_bus_layout.tres`). The
+    main menu now uses `UiSfx`. The router's layer is moved last under the root when a
+    dialog or cover opens, so it sees input before the screens.
+  - Input: Godot 4.7's defaults had **no gamepad button on ui_accept/ui_cancel** (only the
+    d-pad and stick on the directions). Added pad A and B, plus `ui_page_prev`/`ui_page_next`
+    (PgUp/PgDn, LB/RB). Focus rings use Godot's hidden focus: `grab_focus(hide)` and
+    `has_focus(true)`. `GlassButton` and `KeyButton` now light only for visible focus.
+  - Gotcha: HDR 2D blends alpha in linear light. A 60% black dim looked barely dimmed and a
+    97% dialog background let bright text through, so the dim is now 85% and the panel opaque.
+  - Gallery `ui/gallery/gallery.tscn` has three pages. CONTROLS covers glass slots, keys,
+    screen button states, icon buttons, choice and slider rows, an inline dialog and the
+    router demos. DATA covers the key-binding grid, list picker, pane frames and type
+    samples. STAGES covers the model stage and tactical map with screen chrome and power-on.
+- Verification (2026-10-14). The gallery passed the layout audit and the focus walk on every
+  page at 1280x720, 1920x1080, 2560x1440, 3840x2160, 3840x1600 and 1600x1200 (4:3). The
+  walk reached all 32, 31 and 3 focusable controls. The audit found no overflow, nothing off
+  screen and no clipped labels. 4K crops are sharp: text, SVG icons and chamfered edges.
+  `--padtest` passed, with injected pad events for d-pad navigation, A accept, B cancelling a
+  dialog, B popping a pushed screen, and RB switching pages. The main menu renders as before.
+- Left for the user: sign off on the gallery's look, and try a real gamepad (run the gallery
+  and the main menu with a pad).
 
 ## Goal
 A sharp, modern, resolution-independent UI kit for the remake, built from scratch the
@@ -211,8 +242,11 @@ Done when:
 - The user signs off on the style frames and on the gallery's look.
 
 ## Open questions
-- Base resolution 1920x1080 vs 2560x1440 (working assumption: 1920x1080).
-- SVG icons: `DPITexture` exists in Godot 4.7 (checked), so use it for SVG icons.
+- Resolved: base resolution 1920x1080 (16:9 scales cleanly; 12:5 widens to 2592x1080 and
+  4:3 grows to 1920x1440, with content kept in 16:9 by `SafeArea`).
+- Resolved: SVG icons import as `DPITexture` (the `svg` importer).
+- Moved to R14: the UI scale option (`content_scale_factor`), high-contrast and
+  colour-blind theme variants.
 
 ## Dependencies
 - None blocking (design can start now). R10 provides the content inventory. R8 provides

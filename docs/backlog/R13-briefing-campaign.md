@@ -64,6 +64,12 @@ win/lose → debrief → briefing 1-2, and a save from that point loads back int
 - How many save slots, and what's in a save (mission index only, or squad/vehicle state)?
 - Can a mission be failed and retried, and does the campaign branch?
 
+## Available from R11 (2026-10-14)
+- Save/load slots: `ListPicker` (select, then press again or accept to load).
+  Overwrite/abort prompts: `UiRouter.confirm`. Loading: `UiRouter.cover("LOADING")`.
+- Briefing pieces already in the main menu style frame: `TacticalMap`, `ModelStage`,
+  objectives with yellow box bullets (`PaneFrame`). Usage guide: `remake/README.md`, "UI kit".
+
 ## Dependencies
 - R10 (menu map) for the entry points, R11 (kit), R12 (shell). R5 for a real mission to
   launch. R8 for briefing audio/video.

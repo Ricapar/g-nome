@@ -63,6 +63,19 @@ briefing stub (or the R5 sandbox once it exists).
 - Should the remake keep the 7th Level/exit advert screens? (Default: drop the advert, keep credits.)
 - Training and MISSION select: do they need a mission picker screen (R13)?
 
+## Available from R11 (2026-10-14)
+- `UiRouter` autoload already exists: `push`/`pop`/`replace`, the shutter transition,
+  `back()` (calls a screen's `ui_back()`), and `await confirm(...)` for the exit prompt.
+  Use `StubScreen.make(title, note)` for the R13, R14 and R15 stubs.
+- `UiSfx` autoload replaces the menu's own `UiSounds` node. `bind(button, id)` gives the
+  standard sounds.
+- The main menu still handles ui_cancel in its own `_input`. Move that to `ui_back()` so the
+  router's dialogs get Escape first. The router already raises its layer when a dialog
+  opens, but the menu's `_input` still runs.
+- Pad A and B are now on ui_accept and ui_cancel. Before this, a pad couldn't press menu
+  entries at all.
+- The usage guide is in `remake/README.md`, "UI kit". The gallery shows every component.
+
 ## Dependencies
 - R10 (menu map), R11 (kit). Uses R8 for video/sound if available.
 - Blocks R13, R14, R15 entry points (they can be developed standalone and plugged in).
